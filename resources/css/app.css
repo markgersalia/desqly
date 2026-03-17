@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* 1. Point to your config file */
+/* @config "../../tailwind.config.js"; */
+
+/* 2. Your existing theme overrides */
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    
+    /* Note: Filament's preset handles the --primary and --gray scales.
+       If you want to override them, use the standard Tailwind 4 syntax:
+    */
+    --color-primary-500: var(--color-amber-500);
+}

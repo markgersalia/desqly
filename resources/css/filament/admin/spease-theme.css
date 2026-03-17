@@ -1,0 +1,141 @@
+
+/* Sidebar - Always Dark Mode */
+.fi-sidebar {
+    /* @apply bg-linear-to-b from-gray-800 to-gray-950 bg-linear-to-t text-white;  */
+    border-right-color: rgb(31 41 55) !important; /* gray-800 */
+}
+.fi-body {
+    &:not(.fi-body-has-top-navigation) {
+        & .fi-sidebar {
+            &.fi-sidebar-open {
+              width:16rem;
+            }
+        }
+    }
+}
+/* Force dark mode styles for sidebar text and elements */
+.fi-sidebar * {
+    color-scheme: dark;
+}
+
+/* Sidebar brand/logo - White/Light color */
+.fi-sidebar .fi-logo,
+.fi-sidebar .fi-sidebar-header,
+.fi-sidebar .fi-sidebar-brand {
+    @apply text-gray-200;
+}
+
+.fi-sidebar .fi-sidebar-item-button,
+.fi-sidebar .fi-sidebar-group-label,
+.fi-sidebar .fi-sidebar-item-label {
+    @apply text-gray-400;
+}
+
+.fi-sidebar .fi-sidebar-item-button:hover {
+    @apply bg-gray-800 text-gray-200;
+}
+
+.fi-sidebar .fi-sidebar-item-button.fi-active {
+    @apply bg-black text-yellow-500;
+}
+
+/* Sidebar icons */
+.fi-sidebar .fi-sidebar-item-icon {
+    @apply text-gray-400;
+}
+
+.fi-sidebar .fi-sidebar-item-button:hover .fi-sidebar-item-icon {
+    @apply text-gray-200;
+}
+
+.fi-sidebar .fi-sidebar-item-button.fi-active .fi-sidebar-item-icon {
+    @apply text-yellow-500;
+}
+
+/* Badge on active items */
+.fi-sidebar .fi-sidebar-item-button.fi-active .fi-badge {
+    @apply border-yellow-500 text-yellow-500;
+}
+
+.fi-sidebar-close-overlay{
+    /* @apply  fi-sidebar-close-overlay; */
+}
+
+/* Main Content - Responsive to theme */
+.fi-page,
+.fi-page-content {
+    @apply w-full max-w-none;
+}
+
+/* Remove max width and centering */
+.fi-main,
+.fi-main .fi-main-content {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+/* Sub-navigation sidebar - Responsive to theme (NOT dark mode) */
+.fi-page-sub-navigation-sidebar-ctn{
+    height: 100vh;
+    @apply border-r-1 border-gray-200 dark:border-none pr-5;
+}
+
+/* Kill the auto-centering */
+.fi-main .mx-auto {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+.fi-main-ctn{
+    display: flex;
+    flex: 2;
+    padding: 0;
+}
+
+.ec-list .ec-day-head { 
+    @apply bg-white dark:bg-gray-900;
+    background-color: transparent;
+    border-style: solid none;
+    margin: -1px 0 0;
+    padding: 8px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.ec-day.ec-today { 
+    /* @apply dark:bg-gray-900; */
+    /* background-color: var(--primary-50); */
+}
+ .fi-sidebar-item {
+    &.fi-sidebar-item-has-url {
+        & > .fi-sidebar-item-btn { 
+                &:hover {
+                    @media (hover: hover) {
+                        @supports (color: color-mix(in lab, red, red)) {
+                            background-color: 
+color-mix(in oklab, var(--color-white) 5%, transparent);
+                        }
+                    }
+                } 
+        }
+    }
+}
+
+.fi-sidebar-item {
+    &.fi-active {
+        & > .fi-sidebar-item-btn {
+            & > .fi-sidebar-item-label { 
+                    color: var(--primary-400);
+                }
+            } 
+}}
+
+.fi-sidebar-item {
+    &.fi-active {
+        & > .fi-sidebar-item-btn {
+            background-color: 
+color-mix(in oklab, var(--color-white) 5%, transparent);
+        }
+    }
+}

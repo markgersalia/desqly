@@ -1,0 +1,9 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+/* @import '../../../../vendor/filafly/lucent/resources/css/theme.css'; */
+/* @import '../../../../vendor/filafly/brisk/resources/css/theme.css'; */
+
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+@import '../../../../resources/css/filament/admin/spease-theme.css'
