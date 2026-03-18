@@ -3,14 +3,16 @@
 namespace App\Models;
 
 use App\TherapistLeaveType;
+use App\Models\Concerns\BelongsToCompany;
 use Guava\Calendar\Contracts\Eventable;
 use Guava\Calendar\ValueObjects\CalendarEvent;
 use Illuminate\Database\Eloquent\Model;
 
 class TherapistLeave extends Model implements Eventable
 {
+    use BelongsToCompany;
 
-    protected $fillable = ['therapist_id', 'status', 'reason', 'start_date', 'end_date', 'type'];
+    protected $fillable = ['company_id', 'therapist_id', 'status', 'reason', 'start_date', 'end_date', 'type'];
 
 
     protected $casts = [

@@ -21,7 +21,7 @@ test('redirects authenticated users to onboarding when incomplete', function () 
 
     $response = $this->actingAs($user)->get('/test-admin/dashboard');
 
-    $response->assertRedirect(route('filament.admin.pages.onboarding'));
+    $response->assertRedirect(route('filament.admin.pages.onboarding', filament_tenant_route_params($user->company)));
 });
 
 test('allows onboarding route when incomplete', function () {

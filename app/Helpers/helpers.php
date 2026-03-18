@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Company;
 use App\Services\BusinessSettings;
+use Filament\Facades\Filament;
 
 
 if (! function_exists('status_color')) {
@@ -30,5 +32,30 @@ if (! function_exists('business_label')) {
         } catch (\Throwable $e) {
             return $default;
         }
+    }
+}
+
+if (! function_exists('filament_tenant_route_params')) {
+    function filament_tenant_route_params(?Company $company = null): array
+    {
+        if (! $company) {
+            try {
+                $tenant = Filament::getTenant();
+                if ($tenant instanceof Company) {
+                    $company = $tenant;
+                }
+            } catch (\Throwable $e) {
+            }
+        }
+
+        if (! $company) {
+            $company = auth('web')->user()?->company;
+        }
+
+        if (! $company) {
+            return [];
+        }
+
+        return ['tenant' => $company->slug ?: $company->getKey()];
     }
 }

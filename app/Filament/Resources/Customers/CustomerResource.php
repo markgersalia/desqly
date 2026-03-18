@@ -1,24 +1,22 @@
 <?php
 
 namespace App\Filament\Resources\Customers;
- 
-use App\Filament\Resources\Customers\Widgets\CustomerStats;
+
 use App\Filament\Resources\Customers\Pages\CreateCustomer;
 use App\Filament\Resources\Customers\Pages\EditCustomer;
 use App\Filament\Resources\Customers\Pages\ListCustomers;
 use App\Filament\Resources\Customers\Pages\ViewCustomer;
-use App\Filament\Resources\Customers\RelationManagers\BookingsRelationManager;
-use App\Filament\Resources\Customers\RelationManagers\PostAssestmentsRelationManager;
 use App\Filament\Resources\Customers\Schemas\CustomerForm;
 use App\Filament\Resources\Customers\Schemas\CustomerInfolist;
 use App\Filament\Resources\Customers\Tables\CustomersTable;
+use App\Filament\Resources\Customers\Widgets\CustomerStats;
 use App\Models\Customer;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use UnitEnum;
 
 class CustomerResource extends Resource
 {
@@ -26,12 +24,13 @@ class CustomerResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::UserGroup;
 
-    // protected static UnitEnum|string|null $navigationGroup = 'Customer Management';
-    
-    
     public static function getNavigationBadge(): ?string
     {
-        return (string) Customer::count();
+        $tenantId = Filament::getTenant()?->getKey();
+
+        return (string) Customer::query()
+            ->when($tenantId, fn ($query) => $query->where('company_id', $tenantId))
+            ->count();
     }
 
     public static function form(Schema $schema): Schema
@@ -51,16 +50,15 @@ class CustomerResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            // PostAssestmentsRelationManager::class
-        ];
+        return [];
     }
+
     /**
-     * Return the form schema for reuse in other forms
+     * Return the form schema for reuse in other forms.
      */
     public static function getFormSchema(): array
     {
-        return CustomerForm::schema(); // <-- create a schema() method in CustomerForm
+        return CustomerForm::schema();
     }
 
     public static function getPages(): array
@@ -73,12 +71,10 @@ class CustomerResource extends Resource
         ];
     }
 
-     public static function getWidgets(): array
+    public static function getWidgets(): array
     {
         return [
             CustomerStats::class,
         ];
     }
 }
-
-

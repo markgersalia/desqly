@@ -13,6 +13,7 @@ use App\Filament\Resources\Listings\Schemas\ListingInfolist;
 use App\Filament\Resources\Listings\Tables\ListingsTable;
 use App\Models\Listing;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -40,7 +41,11 @@ class ListingResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) Listing::count();
+        $tenantId = Filament::getTenant()?->getKey();
+
+        return (string) Listing::query()
+            ->when($tenantId, fn ($query) => $query->where('company_id', $tenantId))
+            ->count();
     }
 
     public function getTitle(): string | Htmlable

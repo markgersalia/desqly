@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class Bed extends Model
 {
+    use BelongsToCompany;
+
     protected $fillable = [
+        'company_id',
         'name',
         'branch_id',
         'description',

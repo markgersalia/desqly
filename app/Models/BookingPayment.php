@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Model;
 
 class BookingPayment extends Model
 {
+    use BelongsToCompany;
 
-    protected $fillable = ['booking_id', 'amount', 'payment_status','processed_by_id','payment_method','payment_reference'];
+    protected $fillable = ['company_id', 'booking_id', 'amount', 'payment_status','processed_by_id','payment_method','payment_reference'];
     //
 
     public function booking(){
@@ -32,14 +34,14 @@ class BookingPayment extends Model
         // Before creating a new Customer
         static::creating(function ($data) {
             // Generate a unique code
-            $data->processed_by_id = auth()->user()->id;
+            $data->processed_by_id = auth()->user()?->id;
             
         });
 
         // Before saving (both creating and updating)
         static::saving(function ($data) {
             // Example: ensure name is title-cased
-            $data->processed_by_id = auth()->user()->id;
+            $data->processed_by_id = auth()->user()?->id;
         });
     }
 

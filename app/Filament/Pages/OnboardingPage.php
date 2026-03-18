@@ -3,13 +3,14 @@
 namespace App\Filament\Pages;
 
 use App\Models\Branch;
+use App\Models\Company;
 use App\Services\BusinessSettings;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Components\Wizard\Step;
 use Filament\Schemas\Schema;
@@ -30,14 +31,17 @@ class OnboardingPage extends Page
 
     public function mount(BusinessSettings $businessSettings): void
     {
-        if ($businessSettings->isOnboardingComplete()) {
-            $this->redirect(route('filament.admin.pages.dashboard'), navigate: true);
+        $tenant = Filament::getTenant();
+        $company = $tenant instanceof Company ? $tenant : null;
+
+        if ($businessSettings->isOnboardingComplete($company)) {
+            $this->redirect(route('filament.admin.pages.dashboard', filament_tenant_route_params($company)), navigate: true);
 
             return;
         }
 
         $defaults = $businessSettings->defaults();
-        $settings = $businessSettings->getSettings();
+        $settings = $businessSettings->getSettings($company);
 
         $this->timezones = timezone_identifiers_list();
 
@@ -197,7 +201,11 @@ class OnboardingPage extends Page
     {
         $state = $this->form->getState();
 
+        $tenant = Filament::getTenant();
+        $company = $tenant instanceof Company ? $tenant : null;
+
         $branch = Branch::create([
+            'company_id' => $company?->getKey(),
             'name' => data_get($state, 'initial_branch.name'),
             'address' => data_get($state, 'initial_branch.address'),
             'is_active' => true,
@@ -234,15 +242,15 @@ class OnboardingPage extends Page
             ],
         ];
 
-        $businessSettings->saveSettings($payload);
-        $businessSettings->backfillBranchAssignments($branch->id);
-        $businessSettings->applyRuntimeConfig();
+        $businessSettings->saveSettings($payload, $company);
+        $businessSettings->backfillBranchAssignments($branch->id, $company);
+        $businessSettings->applyRuntimeConfig($company);
 
         Notification::make()
             ->title('Onboarding completed')
             ->success()
             ->send();
 
-        $this->redirect(route('filament.admin.pages.dashboard'), navigate: true);
+        $this->redirect(route('filament.admin.pages.dashboard', filament_tenant_route_params($company)), navigate: true);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -12,8 +13,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class CustomerPostAssesment extends Model
 {
-    //
+    use BelongsToCompany;
+
     protected $fillable = [
+        'company_id',
         'primary_concern',
         'listing_id',
         'booking_id',

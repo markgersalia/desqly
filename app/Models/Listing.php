@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
@@ -9,9 +10,11 @@ use Carbon\Carbon;
 class Listing extends Model
 {
     //
+     use BelongsToCompany;
      use HasFactory;
 
     protected $fillable = [
+        'company_id',
         'images',
         'title',
         'description',

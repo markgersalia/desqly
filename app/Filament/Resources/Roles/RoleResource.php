@@ -33,13 +33,13 @@ use UnitEnum;
 class RoleResource extends Resource
 {
     use Essentials\BelongsToParent;
-    use Essentials\BelongsToTenant;
     use Essentials\HasGlobalSearch;
     use Essentials\HasLabels;
     use Essentials\HasNavigation;
     use HasShieldFormComponents;
 
     protected static ?string $recordTitleAttribute = 'name';
+    protected static bool $isScopedToTenant = false;
     public static function getNavigationGroup(): ?string
     {
         return 'Access Control';
@@ -167,3 +167,4 @@ class RoleResource extends Resource
         return FilamentShieldPlugin::get();
     }
 }
+

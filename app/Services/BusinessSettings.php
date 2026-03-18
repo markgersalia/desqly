@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Company;
 use App\Models\Setting;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -98,7 +100,7 @@ class BusinessSettings
         return $presets[$type] ?? $presets['generic'];
     }
 
-    public function getSettings(): array
+    public function getSettings(?Company $company = null): array
     {
         $defaults = $this->defaults();
 
@@ -106,35 +108,53 @@ class BusinessSettings
             return $defaults;
         }
 
-        $row = Setting::query()->first();
+        $resolvedCompany = $this->resolveCompany($company);
+        $query = Setting::query();
+
+        if ($resolvedCompany && Schema::hasColumn('settings', 'company_id')) {
+            $query->where('company_id', $resolvedCompany->getKey());
+        }
+
+        $row = $query->first();
         $data = is_array($row?->data) ? $row->data : [];
 
         return array_replace_recursive($defaults, $data);
     }
 
-    public function saveSettings(array $data): Setting
+    public function saveSettings(array $data, ?Company $company = null): Setting
     {
         if (! $this->settingsTableExists()) {
             throw new \RuntimeException('Settings table does not exist yet.');
         }
 
-        $merged = array_replace_recursive($this->getSettings(), $data);
+        $resolvedCompany = $this->resolveCompany($company);
+        $merged = array_replace_recursive($this->getSettings($resolvedCompany), $data);
+        $query = Setting::query();
 
-        $row = Setting::query()->first() ?? new Setting();
+        if ($resolvedCompany && Schema::hasColumn('settings', 'company_id')) {
+            $query->where('company_id', $resolvedCompany->getKey());
+        }
+
+        $row = $query->first() ?? new Setting();
+
+        if ($resolvedCompany && Schema::hasColumn('settings', 'company_id')) {
+            $row->company_id = $resolvedCompany->getKey();
+        }
+
         $row->data = $merged;
         $row->save();
 
         return $row;
     }
 
-    public function isOnboardingComplete(): bool
+    public function isOnboardingComplete(?Company $company = null): bool
     {
-        return ! empty(data_get($this->getSettings(), 'onboarding.completed_at'));
+        return ! empty(data_get($this->getSettings($company), 'onboarding.completed_at'));
     }
 
-    public function getDefaultBranchId(): ?int
+    public function getDefaultBranchId(?Company $company = null): ?int
     {
-        $id = data_get($this->getSettings(), 'branches.default_branch_id');
+        $id = data_get($this->getSettings($company), 'branches.default_branch_id');
 
         return $id ? (int) $id : null;
     }
@@ -146,9 +166,9 @@ class BusinessSettings
         return is_string($value) && $value !== '' ? $value : $default;
     }
 
-    public function applyRuntimeConfig(): void
+    public function applyRuntimeConfig(?Company $company = null): void
     {
-        $settings = $this->getSettings();
+        $settings = $this->getSettings($company);
 
         config([
             'app.name' => data_get($settings, 'business.name', config('app.name')),
@@ -165,19 +185,79 @@ class BusinessSettings
         ]);
     }
 
-    public function backfillBranchAssignments(int $defaultBranchId): void
+    public function backfillBranchAssignments(int $defaultBranchId, ?Company $company = null): void
     {
         if (! Schema::hasTable('therapists') || ! Schema::hasTable('beds') || ! Schema::hasTable('bookings')) {
             return;
         }
 
-        DB::table('therapists')->whereNull('branch_id')->update(['branch_id' => $defaultBranchId]);
-        DB::table('beds')->whereNull('branch_id')->update(['branch_id' => $defaultBranchId]);
-        DB::table('bookings')->whereNull('branch_id')->update(['branch_id' => $defaultBranchId]);
+        $resolvedCompany = $this->resolveCompany($company);
+        $companyId = $resolvedCompany?->getKey();
+
+        $therapists = DB::table('therapists')->whereNull('branch_id');
+        $beds = DB::table('beds')->whereNull('branch_id');
+        $bookings = DB::table('bookings')->whereNull('branch_id');
+
+        if ($companyId && Schema::hasColumn('therapists', 'company_id')) {
+            $therapists->where(function ($query) use ($companyId) {
+                $query->where('company_id', $companyId)->orWhereNull('company_id');
+            });
+        }
+
+        if ($companyId && Schema::hasColumn('beds', 'company_id')) {
+            $beds->where(function ($query) use ($companyId) {
+                $query->where('company_id', $companyId)->orWhereNull('company_id');
+            });
+        }
+
+        if ($companyId && Schema::hasColumn('bookings', 'company_id')) {
+            $bookings->where(function ($query) use ($companyId) {
+                $query->where('company_id', $companyId)->orWhereNull('company_id');
+            });
+        }
+
+        $therapists->update(['branch_id' => $defaultBranchId]);
+        $beds->update(['branch_id' => $defaultBranchId]);
+        $bookings->update(['branch_id' => $defaultBranchId]);
     }
 
     private function settingsTableExists(): bool
     {
         return Schema::hasTable('settings');
+    }
+
+    private function resolveCompany(?Company $company = null): ?Company
+    {
+        if ($company) {
+            return $company;
+        }
+
+        try {
+            $tenant = Filament::getTenant();
+
+            if ($tenant instanceof Company) {
+                return $tenant;
+            }
+        } catch (\Throwable $e) {
+        }
+
+        $userCompany = auth('web')->user()?->company;
+
+        if ($userCompany instanceof Company) {
+            return $userCompany;
+        }
+
+        if (! Schema::hasTable('companies')) {
+            return null;
+        }
+
+        $query = Company::query();
+        $count = $query->count();
+
+        if ($count === 1) {
+            return $query->first();
+        }
+
+        return null;
     }
 }

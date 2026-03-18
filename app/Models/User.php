@@ -3,12 +3,19 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Filament\Models\Contracts\HasDefaultTenant;
+use Filament\Models\Contracts\HasTenants;
+use Filament\Panel;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Collection;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Filament\Facades\Filament;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements HasDefaultTenant, HasTenants
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
@@ -20,6 +27,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'company_id',
         'name',
         'email',
         'password',
@@ -48,6 +56,26 @@ class User extends Authenticatable
         ];
     }
 
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function getTenants(Panel $panel): array | Collection
+    {
+        return $this->company ? collect([$this->company]) : collect();
+    }
+
+    public function canAccessTenant(Model $tenant): bool
+    {
+        return (int) ($this->company_id ?? 0) === (int) $tenant->getKey();
+    }
+
+    public function getDefaultTenant(Panel $panel): ?Model
+    {
+        return $this->company;
+    }
+
       /**
      * Get the attributes that should be cast.
      *
@@ -56,7 +84,12 @@ class User extends Authenticatable
     public static function getAdminUsers()
     {
         try {
-            return self::role('Admin')->get();
+            $companyId = Filament::getTenant()?->getKey() ?? auth('web')->user()?->company_id;
+
+            return self::query()
+                ->role('Admin')
+                ->when($companyId, fn ($query) => $query->where('company_id', $companyId))
+                ->get();
         } catch (\Throwable $e) {
             return self::query()->whereRaw('1 = 0')->get();
         }

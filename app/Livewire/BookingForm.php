@@ -357,7 +357,10 @@ class BookingForm extends Component
                         ->actions([
                             Action::make('view')
                                 ->label('View Booking')
-                                ->url(route('filament.admin.resources.bookings.edit', ['record' => $this->booking->id]))
+                                ->url(route('filament.admin.resources.bookings.edit', array_merge(
+                                    filament_tenant_route_params($this->booking->company),
+                                    ['record' => $this->booking->id]
+                                )))
                                 ->markAsRead(),
                         ])
                         ->toDatabase()

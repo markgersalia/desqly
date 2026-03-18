@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class Therapist extends Model
 {
-    //
-    protected $fillable = ['image', 'name', 'bio', 'availability', 'branch_id', 'email', 'phone', 'is_active'];
+    use BelongsToCompany;
+
+    protected $fillable = ['company_id', 'image', 'name', 'bio', 'availability', 'branch_id', 'email', 'phone', 'is_active'];
 
     protected $casts = [
         'boolean' => 'is_active'

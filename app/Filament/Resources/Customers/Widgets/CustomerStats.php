@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\Customers\Widgets;
 
 use App\Models\Customer;
+use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 class CustomerStats extends StatsOverviewWidget
@@ -12,7 +14,7 @@ class CustomerStats extends StatsOverviewWidget
     protected function getStats(): array
     {
         return [
-            Stat::make('Total Customers', Customer::count())
+            Stat::make('Total Customers', $this->baseQuery()->count())
                 ->description('All registered customers')
                 ->color('primary'),
 
@@ -36,23 +38,32 @@ class CustomerStats extends StatsOverviewWidget
 
     protected function newCustomersThisMonth(): int
     {
-        return Customer::whereMonth('created_at', Carbon::now()->month)
+        return $this->baseQuery()
+            ->whereMonth('created_at', Carbon::now()->month)
             ->whereYear('created_at', Carbon::now()->year)
             ->count();
     }
 
     protected function customersWithBookings(): int
     {
-        return Customer::has('bookings')->count();
+        return $this->baseQuery()->has('bookings')->count();
     }
 
     protected function returningCustomers(): int
     {
-        return Customer::has('bookings', '>=', 2)->count();
+        return $this->baseQuery()->has('bookings', '>=', 2)->count();
     }
 
     protected function inactiveCustomers(): int
     {
-        return Customer::doesntHave('bookings')->count();
+        return $this->baseQuery()->doesntHave('bookings')->count();
+    }
+
+    protected function baseQuery(): Builder
+    {
+        $tenantId = Filament::getTenant()?->getKey();
+
+        return Customer::query()
+            ->when($tenantId, fn (Builder $query) => $query->where('company_id', $tenantId));
     }
 }

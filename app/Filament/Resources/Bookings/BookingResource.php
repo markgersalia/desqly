@@ -2,19 +2,16 @@
 
 namespace App\Filament\Resources\Bookings;
 
-// use App\Filament\Clusters\Booking\BookingCluster;
-use App\Filament\Resources\Bookings\Widgets\BookingStats;
 use App\Filament\Resources\Bookings\Pages\CreateBooking;
 use App\Filament\Resources\Bookings\Pages\EditBooking;
 use App\Filament\Resources\Bookings\Pages\ListBookings;
-use App\Filament\Resources\Bookings\Pages\ViewBooking;
 use App\Filament\Resources\Bookings\RelationManagers\PaymentsRelationManager;
 use App\Filament\Resources\Bookings\Schemas\BookingForm;
-use App\Filament\Resources\Bookings\Schemas\BookingInfolist;
 use App\Filament\Resources\Bookings\Tables\BookingsTable;
+use App\Filament\Resources\Bookings\Widgets\BookingStats;
 use App\Models\Booking;
 use BackedEnum;
-use Faker\Provider\Payment;
+use Filament\Facades\Filament;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -41,14 +38,21 @@ class BookingResource extends Resource
     {
         return Str::plural(self::getModelLabel());
     }
+
     public static function form(Schema $schema): Schema
     {
         return BookingForm::configure($schema);
     }
+
     public static function getNavigationBadge(): ?string
     {
-        return (string) Booking::count();
+        $tenantId = Filament::getTenant()?->getKey();
+
+        return (string) Booking::query()
+            ->when($tenantId, fn ($query) => $query->where('company_id', $tenantId))
+            ->count();
     }
+
     public static function table(Table $table): Table
     {
         return BookingsTable::configure($table);
@@ -57,7 +61,7 @@ class BookingResource extends Resource
     public static function getRelations(): array
     {
         return [
-            PaymentsRelationManager::class
+            PaymentsRelationManager::class,
         ];
     }
 
@@ -66,7 +70,6 @@ class BookingResource extends Resource
         return [
             'index' => ListBookings::route('/'),
             'create' => CreateBooking::route('/create'),
-            // 'view' => ViewBooking::route('/{record}'),
             'edit' => EditBooking::route('/{record}/edit'),
         ];
     }
@@ -78,5 +81,3 @@ class BookingResource extends Resource
         ];
     }
 }
-
-

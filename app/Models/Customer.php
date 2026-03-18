@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Customer extends Model
 {
+    use BelongsToCompany;
     use HasFactory;
 
-    protected $fillable = ['name', 'email', 'phone', 'address','is_vip','image','created_by_id'];
+    protected $fillable = ['company_id', 'name', 'email', 'phone', 'address','is_vip','image','created_by_id'];
 
     public function bookings(){
         return $this->hasMany(Booking::class);

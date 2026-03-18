@@ -36,7 +36,10 @@ class BookingNotificationService
                 ->actions([
                     Action::make('view')
                         ->label('View Booking')
-                        ->url(route('filament.admin.resources.bookings.edit', ['record' => $booking->id]))
+                        ->url(route('filament.admin.resources.bookings.edit', array_merge(
+                            filament_tenant_route_params($booking->company),
+                            ['record' => $booking->id]
+                        )))
                         ->markAsRead(),
                 ])
                 ->sendToDatabase($recipient);

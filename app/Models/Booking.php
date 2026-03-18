@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Mail\BookingMailNotification;
+use App\Models\Concerns\BelongsToCompany;
 use App\Services\BusinessSettings;
 use App\Services\BookingNotificationService;
 use App\Services\InvoiceGenerateService;
@@ -21,9 +22,11 @@ use Psy\Util\Str;
 
 class Booking extends Model implements Eventable
 {
+    use BelongsToCompany;
     use HasFactory, SoftDeletes;
     //
     protected $fillable = [
+        'company_id',
         'user_id',     // who booked
         'booking_number',     // who booked
         'customer_id',  // who bookedich listing
@@ -155,6 +158,11 @@ class Booking extends Model implements Eventable
         static::creating(function ($booking) {
             // Generate a unique code
             $booking->user_id = auth()->user()->id ?? null;
+
+            if (! $booking->company_id) {
+                $branchCompanyId = Branch::query()->whereKey($booking->branch_id)->value('company_id');
+                $booking->company_id = $branchCompanyId ?: auth()->user()?->company_id;
+            }
 
             if (! $booking->branch_id) {
                 $booking->branch_id = app(BusinessSettings::class)->getDefaultBranchId();

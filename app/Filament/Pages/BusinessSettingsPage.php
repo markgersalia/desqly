@@ -3,7 +3,9 @@
 namespace App\Filament\Pages;
 
 use App\Models\Branch;
+use App\Models\Company;
 use App\Services\BusinessSettings;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -34,14 +36,17 @@ class BusinessSettingsPage extends Page
 
     public function mount(BusinessSettings $businessSettings): void
     {
-        if (! $businessSettings->isOnboardingComplete()) {
-            $this->redirect(route('filament.admin.pages.onboarding'), navigate: true);
+        $tenant = Filament::getTenant();
+        $company = $tenant instanceof Company ? $tenant : null;
+
+        if (! $businessSettings->isOnboardingComplete($company)) {
+            $this->redirect(route('filament.admin.pages.onboarding', filament_tenant_route_params($company)), navigate: true);
 
             return;
         }
 
         $defaults = $businessSettings->defaults();
-        $settings = $businessSettings->getSettings();
+        $settings = $businessSettings->getSettings($company);
 
         $this->timezones = timezone_identifiers_list();
 
@@ -53,7 +58,13 @@ class BusinessSettingsPage extends Page
         ], $settings);
 
         if (! data_get($initial, 'branches.default_branch_id')) {
-            data_set($initial, 'branches.default_branch_id', Branch::query()->value('id'));
+            data_set(
+                $initial,
+                'branches.default_branch_id',
+                Branch::query()
+                    ->when($company, fn ($query) => $query->where('company_id', $company->getKey()))
+                    ->value('id')
+            );
         }
 
         $this->form->fill($initial);
@@ -77,7 +88,10 @@ class BusinessSettingsPage extends Page
     public static function shouldRegisterNavigation(): bool
     {
         try {
-            return app(BusinessSettings::class)->isOnboardingComplete();
+            $tenant = Filament::getTenant();
+            $company = $tenant instanceof Company ? $tenant : null;
+
+            return app(BusinessSettings::class)->isOnboardingComplete($company);
         } catch (\Throwable $e) {
             return false;
         }
@@ -196,7 +210,16 @@ class BusinessSettingsPage extends Page
                     ->schema([
                         Select::make('branches.default_branch_id')
                             ->label('Default Branch')
-                            ->options(fn () => Branch::query()->orderBy('name')->pluck('name', 'id')->all())
+                            ->options(function (): array {
+                                $tenant = Filament::getTenant();
+                                $company = $tenant instanceof Company ? $tenant : null;
+
+                                return Branch::query()
+                                    ->when($company, fn ($query) => $query->where('company_id', $company->getKey()))
+                                    ->orderBy('name')
+                                    ->pluck('name', 'id')
+                                    ->all();
+                            })
                             ->searchable()
                             ->preload()
                             ->required()
@@ -208,7 +231,11 @@ class BusinessSettingsPage extends Page
                                     ->maxLength(255),
                             ])
                             ->createOptionUsing(function (array $data): int {
+                                $tenant = Filament::getTenant();
+                                $company = $tenant instanceof Company ? $tenant : null;
+
                                 $branch = Branch::create([
+                                    'company_id' => $company?->getKey(),
                                     'name' => $data['name'],
                                     'address' => $data['address'] ?? null,
                                     'is_active' => true,
@@ -224,6 +251,8 @@ class BusinessSettingsPage extends Page
     public function save(BusinessSettings $businessSettings): void
     {
         $state = $this->form->getState();
+        $tenant = Filament::getTenant();
+        $company = $tenant instanceof Company ? $tenant : null;
 
         $defaultBranchId = (int) data_get($state, 'branches.default_branch_id');
 
@@ -255,9 +284,9 @@ class BusinessSettingsPage extends Page
             ],
         ];
 
-        $businessSettings->saveSettings($payload);
-        $businessSettings->backfillBranchAssignments($defaultBranchId);
-        $businessSettings->applyRuntimeConfig();
+        $businessSettings->saveSettings($payload, $company);
+        $businessSettings->backfillBranchAssignments($defaultBranchId, $company);
+        $businessSettings->applyRuntimeConfig($company);
 
         Notification::make()
             ->title('Business settings saved')

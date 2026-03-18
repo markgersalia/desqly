@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Model;
 use LaravelDaily\Invoices\Classes\Buyer;
 use LaravelDaily\Invoices\Classes\InvoiceItem;
@@ -9,8 +10,9 @@ use LaravelDaily\Invoices\Invoice as InvoicesInvoice;
 
 class Invoice extends Model
 {
-    //
-    protected $fillable = ['invoice_number','customer_id','booking_id','amount','invoice_date','due_date','status','items','file_path'];
+    use BelongsToCompany;
+
+    protected $fillable = ['company_id', 'invoice_number','customer_id','booking_id','amount','invoice_date','due_date','status','items','file_path'];
 
     protected $casts = ['items'=>'array'];
 

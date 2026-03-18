@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Model;
 
 class Category extends Model
 {
-    //
+    use BelongsToCompany;
 
-    protected $fillable = ['name','description','slug'];
+    protected $fillable = ['company_id', 'name','description','slug'];
 
     public function listings()
     {

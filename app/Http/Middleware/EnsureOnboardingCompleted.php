@@ -2,9 +2,12 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Company;
 use App\Services\BusinessSettings;
 use Closure;
+use Filament\Facades\Filament;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Exceptions\UrlGenerationException;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureOnboardingCompleted
@@ -22,18 +25,39 @@ class EnsureOnboardingCompleted
             return $next($request);
         }
 
+        $tenant = Filament::getTenant();
+
+        if (! $tenant instanceof Company) {
+            $tenant = auth('web')->user()?->company;
+        }
+
+        if (! $tenant instanceof Company) {
+            return $next($request);
+        }
+
         $isOnboardingRoute = $request->routeIs('filament.admin.pages.onboarding');
         $isLogoutRoute = $request->routeIs('filament.admin.auth.logout');
-        $isComplete = $this->businessSettings->isOnboardingComplete();
+        $isTenantSetupRoute = $request->routeIs('filament.admin.tenant.registration') || $request->routeIs('filament.admin.tenant.profile') || $request->routeIs('filament.admin.tenant.billing');
 
-        if (! $isComplete && ! $isOnboardingRoute && ! $isLogoutRoute) {
-            return redirect()->route('filament.admin.pages.onboarding');
+        $isComplete = $this->businessSettings->isOnboardingComplete($tenant);
+
+        if (! $isComplete && ! $isOnboardingRoute && ! $isLogoutRoute && ! $isTenantSetupRoute) {
+            return $this->redirectWithOptionalTenant('filament.admin.pages.onboarding', $tenant);
         }
 
         if ($isComplete && $isOnboardingRoute) {
-            return redirect()->route('filament.admin.pages.dashboard');
+            return $this->redirectWithOptionalTenant('filament.admin.pages.dashboard', $tenant);
         }
 
         return $next($request);
+    }
+
+    private function redirectWithOptionalTenant(string $routeName, Company $tenant): Response
+    {
+        try {
+            return redirect()->route($routeName, filament_tenant_route_params($tenant));
+        } catch (UrlGenerationException $e) {
+            return redirect()->route($routeName);
+        }
     }
 }

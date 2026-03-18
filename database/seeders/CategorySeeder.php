@@ -2,9 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
+use App\Models\Company;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
-use App\Models\Category; // make sure your model exists
 
 class CategorySeeder extends Seeder
 {
@@ -33,8 +34,11 @@ class CategorySeeder extends Seeder
             ],
         ];
 
+        $companyId = Company::query()->value('id');
+
         foreach ($categories as $category) {
             Category::create([
+                'company_id' => $companyId,
                 'name' => $category['name'],
                 'description' => $category['description'],
                 'slug' => Str::slug($category['name']),
