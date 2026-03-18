@@ -17,7 +17,7 @@
 
 /* Sidebar - Always Dark Mode */
 .fi-sidebar {
-    @apply bg-white border-r border-;  
+    @apply bg-white;  
 }
 .fi-topbar .fi-logo{
     color: --primary-500;
