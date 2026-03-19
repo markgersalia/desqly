@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Therapists\Schemas;
 
 use App\Models\Branch;
+use App\Services\BusinessSettings;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -16,23 +17,26 @@ class TherapistForm
 {
     public static function configure(Schema $schema): Schema
     {
+        $usesBranches = app(BusinessSettings::class)->usesBranches();
+
         return $schema
             ->components([
-                
+
                 Section::make([
-                    
+
                 FileUpload::make('image')
                 ->avatar(),
                 Select::make('branch_id')
                     ->label('Branch')
+                    ->visible($usesBranches)
                     ->options(Branch::query()->orderBy('name')->pluck('name', 'id'))
-                    ->required()
+                    ->required($usesBranches)
                     ->searchable()
                     ->preload(),
                 TextInput::make('name')
                     ->required(),
                 Textarea::make('bio')
-                    ->required(),  
+                    ->required(),
                 TextInput::make('email')
                     ->label('Email address')
                     ->email(),
@@ -41,9 +45,9 @@ class TherapistForm
                 Toggle::make('is_active')
                     ->default(true)
                     ->required(),
-                    
+
                 ])->columnSpan(2),
-                
+
                 Section::make([
                     TextEntry::make('average_rating')
                     ->size('lg')

@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\Listing;
 use App\Models\Therapist;
 use App\PaymentStatus;
+use App\Services\BusinessSettings;
 use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -44,6 +45,13 @@ class BookingForm
 
     public static function schema($type = null): array
     {
+        $businessSettings = app(BusinessSettings::class);
+        $usesBranches = $businessSettings->usesBranches();
+        $requiresStaff = $businessSettings->requiresStaffAssignment();
+        $isWholeDayMode = config('booking.mode', 'time_slot') === 'whole_day';
+        $dayStart = (string) config('booking.day_start', '09:00');
+        $dayEnd = (string) config('booking.day_end', '17:00');
+
         return [
             Group::make([
                 Section::make('Booking Status')->schema([
@@ -146,9 +154,10 @@ class BookingForm
                 Section::make([
                     Select::make('branch_id')
                         ->label('Branch')
+                        ->visible($usesBranches)
                         ->options(Branch::query()->orderBy('name')->pluck('name', 'id'))
-                        ->default(fn ($record) => $record?->branch_id ?? app(\App\Services\BusinessSettings::class)->getDefaultBranchId())
-                        ->required()
+                        ->default(fn ($record) => $usesBranches ? ($record?->branch_id ?? app(BusinessSettings::class)->getDefaultBranchId()) : null)
+                        ->required($usesBranches)
                         ->searchable()
                         ->preload()
                         ->reactive()
@@ -223,36 +232,72 @@ class BookingForm
                 Section::make([
                     DatePicker::make('selected_date')
                         ->label('Select Date')
-                        ->afterStateHydrated(function ($state, callable $set, callable $get) {
+                        ->afterStateHydrated(function ($state, callable $set, callable $get) use ($isWholeDayMode, $dayStart, $dayEnd) {
                             $startTime = $get('start_time');
 
                             if ($startTime) {
                                 $date = $startTime instanceof Carbon ? $startTime : Carbon::parse($startTime);
                                 $set('selected_date', $date->toDateString());
                             }
+
+                            $selectedDate = $get('selected_date');
+                            if ($isWholeDayMode && $selectedDate) {
+                                $set('start_time', Carbon::parse("{$selectedDate} {$dayStart}")->toDateTimeString());
+                                $set('end_time', Carbon::parse("{$selectedDate} {$dayEnd}")->toDateTimeString());
+                                $set('available_timeslots', null);
+                            }
+                        })
+                        ->afterStateUpdated(function ($state, callable $set) use ($isWholeDayMode, $dayStart, $dayEnd) {
+                            if (! $isWholeDayMode) {
+                                return;
+                            }
+
+                            if (! $state) {
+                                $set('start_time', null);
+                                $set('end_time', null);
+                                $set('available_timeslots', null);
+                                return;
+                            }
+
+                            $set('start_time', Carbon::parse("{$state} {$dayStart}")->toDateTimeString());
+                            $set('end_time', Carbon::parse("{$state} {$dayEnd}")->toDateTimeString());
+                            $set('available_timeslots', null);
+                            $set('therapist_id', null);
                         })
                         ->required()
                         ->reactive(),
 
                     ToggleButtons::make('available_timeslots')
-                        ->hidden(function (callable $get) {
-                            return $get('selected_date') == null;
+                        ->hidden(function (callable $get) use ($isWholeDayMode) {
+                            return $isWholeDayMode || $get('selected_date') == null;
                         })
-                        ->options(function (callable $get) {
+                        ->options(function (callable $get) use ($usesBranches, $isWholeDayMode) {
                             $date = $get('selected_date');
                             $branchId = $get('branch_id');
 
-                            if (! $date || ! $branchId) {
+                            if (! $date) {
                                 return [];
                             }
 
-                            return Booking::availableTimeslots($date, $branchId);
-                        })->disableOptionWhen(function (string $value, callable $get, $record = null) {
+                            if ($usesBranches && ! $branchId) {
+                                return [];
+                            }
+
+                            if ($isWholeDayMode) {
+                                return [];
+                            }
+
+                            return Booking::availableTimeslots($date, $branchId ?: null);
+                        })->disableOptionWhen(function (string $value, callable $get, $record = null) use ($usesBranches, $requiresStaff) {
 
                             $date = $get('selected_date');
                             $branchId = $get('branch_id');
 
-                            if (! $date || ! $branchId) {
+                            if (! $date) {
+                                return true;
+                            }
+
+                            if ($usesBranches && ! $branchId) {
                                 return true;
                             }
 
@@ -261,37 +306,45 @@ class BookingForm
                             $slotStart = Carbon::parse("$date $slotStartStr");
                             $slotEnd   = Carbon::parse("$date $slotEndStr");
 
-                            // Get all therapists in this branch
-                            $therapists = Therapist::where('branch_id', $branchId)
+                            if (! $requiresStaff) {
+                                return Booking::query()
+                                    ->confirmed()
+                                    ->whereDate('start_time', $date)
+                                    ->when($usesBranches && $branchId, fn ($query) => $query->where('branch_id', $branchId))
+                                    ->when($record, fn ($query) => $query->where('id', '!=', $record->id))
+                                    ->where(function ($query) use ($slotStart, $slotEnd) {
+                                        $query->where('start_time', '<', $slotEnd)
+                                            ->where('end_time', '>', $slotStart);
+                                    })
+                                    ->exists();
+                            }
+
+                            $therapists = Therapist::query()
                                 ->active()
+                                ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
                                 ->get();
 
-                            // Check if ANY therapist is available
                             foreach ($therapists as $therapist) {
-
                                 $hasConflict = $therapist->bookings()
                                     ->confirmed()
-                                    // ->completed()
                                     ->whereDate('start_time', $date)
-                                    ->when($record, fn($q) => $q->where('id', '!=', $record->id))
-                                    ->where(function ($q) use ($slotStart, $slotEnd) {
-                                        $q->where('start_time', '<', $slotEnd)
+                                    ->when($record, fn ($query) => $query->where('id', '!=', $record->id))
+                                    ->where(function ($query) use ($slotStart, $slotEnd) {
+                                        $query->where('start_time', '<', $slotEnd)
                                             ->where('end_time', '>', $slotStart);
                                     })
                                     ->exists();
 
-                                if (!$hasConflict) {
-                                    // Therapist is free → timeslot should be allowed
+                                if (! $hasConflict) {
                                     return false;
                                 }
                             }
 
-                            // No therapist is available → disable
                             return true;
                         })
 
-                        ->afterStateHydrated(function ($state, callable $set, callable $get, $record) {
-                            if (!$record || !$record->start_time || !$record->end_time) return;
+                        ->afterStateHydrated(function ($state, callable $set, callable $get, $record) use ($isWholeDayMode) {
+                            if ($isWholeDayMode || !$record || !$record->start_time || !$record->end_time) return;
 
                             $start = Carbon::parse($record->start_time)->format('h:i a');
                             $end   = Carbon::parse($record->end_time)->format('h:i a');
@@ -321,31 +374,40 @@ class BookingForm
                             // IMPORTANT: clear previously chosen therapist so select reloads
                             $set('therapist_id', null);
                         })
-                        ->required()
+                        ->required(! $isWholeDayMode)
                         ->dehydrated(false)
                         ->validatedWhenNotDehydrated(false)
                         ->reactive(),
                     Select::make('therapist_id')
                         ->label(business_label('staff', 'Therapist'))
                         ->relationship('therapist', 'name')
-                        ->options(function (callable $get) {
+                        ->options(function (callable $get) use ($requiresStaff) {
+                            if (! $requiresStaff) {
+                                return [];
+                            }
+
                             $branchId = $get('branch_id');
 
                             return Therapist::active()
                                 ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
                                 ->pluck('name', 'id');
                         })
-                        ->disabled(fn (callable $get) => ! $get('branch_id'))
-                        ->disableOptionWhen(function ($value, callable $get, $record = null) {
+                        ->visible($requiresStaff)
+                        ->disabled(fn (callable $get) => $requiresStaff && $usesBranches && ! $get('branch_id'))
+                        ->disableOptionWhen(function ($value, callable $get, $record = null) use ($usesBranches, $requiresStaff) {
+                            if (! $requiresStaff) {
+                                return false;
+                            }
+
                             $date = $get('selected_date');
                             $start = $get('start_time');
                             $end = $get('end_time');
                             $branchId = $get('branch_id');
 
-                            if (!$date || !$start || !$end || !$branchId) return false;
+                            if (!$date || !$start || !$end || ($usesBranches && !$branchId)) return false;
 
                             $therapist = Therapist::active()
-                                ->where('branch_id', $branchId)
+                                ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
                                 ->find($value);
 
                             if (! $therapist) {
@@ -361,9 +423,8 @@ class BookingForm
                         })
                         // ->hidden(fn(callable $get) => $get('available_timeslots') == null)
                         ->preload()
-                        ->required(fn($record) => $record === null)
-                        ->dehydrated(false)
-                        ->validatedWhenNotDehydrated(false)
+                        ->required($requiresStaff)
+                        ->dehydrated($requiresStaff)
                         ->reactive(),
                     Select::make('bed_id')
                         
@@ -376,17 +437,17 @@ class BookingForm
                                 ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
                                 ->pluck('name', 'id');
                         })
-                        ->disabled(fn (callable $get) => ! $get('branch_id'))
-                        ->disableOptionWhen(function ($value, callable $get, $record = null) {
+                        ->disabled(fn (callable $get) => $usesBranches && ! $get('branch_id'))
+                        ->disableOptionWhen(function ($value, callable $get, $record = null) use ($usesBranches) {
                             $date = $get('selected_date');
                             $start = $get('start_time');
                             $end = $get('end_time');
                             $branchId = $get('branch_id');
 
-                            if (!$date || !$start || !$end || !$branchId) return false;
+                            if (!$date || !$start || !$end || ($usesBranches && !$branchId)) return false;
 
                             $bed = Bed::available()
-                                ->where('branch_id', $branchId)
+                                ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
                                 ->find($value);
 
                             if (! $bed) {
@@ -485,3 +546,9 @@ class BookingForm
         ];
     }
 }
+
+
+
+
+
+

@@ -57,7 +57,13 @@ class BusinessSettingsPage extends Page
             'branches' => $defaults['branches'],
         ], $settings);
 
-        if (! data_get($initial, 'branches.default_branch_id')) {
+        data_set(
+            $initial,
+            'booking.requires_staff',
+            $businessSettings->requiresStaffAssignment($company)
+        );
+
+        if ($businessSettings->usesBranches($company) && ! data_get($initial, 'branches.default_branch_id')) {
             data_set(
                 $initial,
                 'branches.default_branch_id',
@@ -108,7 +114,8 @@ class BusinessSettingsPage extends Page
                         TextInput::make('business.name')
                             ->label('Business Name')
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->disabled(),
                         Select::make('business.type')
                             ->label('Business Type')
                             ->options([
@@ -118,32 +125,29 @@ class BusinessSettingsPage extends Page
                                 'generic' => 'Generic',
                             ])
                             ->required()
-                            ->live()
-                            ->afterStateUpdated(function ($state, callable $set): void {
-                                if (! is_string($state)) {
-                                    return;
-                                }
-
-                                $preset = app(BusinessSettings::class)->getTemplatePreset($state);
-
-                                $set('booking.requires_bed', $preset['booking']['requires_bed']);
-                                $set('booking.requires_follow_up', $preset['booking']['requires_follow_up']);
-                                $set('labels.staff', $preset['labels']['staff']);
-                                $set('labels.resource', $preset['labels']['resource']);
-                                $set('labels.service', $preset['labels']['service']);
-                                $set('labels.booking', $preset['labels']['booking']);
-                            }),
+                            ->disabled(),
+                        Select::make('business.entity_type')
+                            ->label('Business Entity')
+                            ->options([
+                                'company' => 'Company',
+                                'individual' => 'Individual',
+                            ])
+                            ->required()
+                            ->default('company')
+                            ->disabled(),
                         Select::make('business.timezone')
                             ->label('Timezone')
                             ->options($timezones)
                             ->searchable()
-                            ->required(),
+                            ->required()
+                            ->disabled(),
                         TextInput::make('business.currency')
                             ->label('Currency (3 letters)')
                             ->required()
                             ->length(3)
                             ->maxLength(3)
                             ->alpha()
+                            ->disabled()
                             ->dehydrateStateUsing(fn ($state) => strtoupper((string) $state)),
                     ])
                     ->columns(2),
@@ -151,39 +155,59 @@ class BusinessSettingsPage extends Page
                     ->schema([
                         Toggle::make('booking.has_listings')
                             ->label('Enable services/listings')
-                            ->required(),
+                            ->required()
+                            ->disabled(),
+                        Toggle::make('booking.requires_staff')
+                            ->label('Require staff')
+                            ->helperText('Automatically ON for company and OFF for individual mode.')
+                            ->disabled(),
                         Toggle::make('booking.requires_bed')
                             ->label('Require resource')
-                            ->required(),
+                            ->required()
+                            ->disabled(),
                         Toggle::make('booking.requires_follow_up')
                             ->label('Require follow-up')
-                            ->required(),
+                            ->required()
+                            ->disabled(),
+                        Select::make('booking.mode')
+                            ->label('Booking Mode')
+                            ->options([
+                                'time_slot' => 'Time Slot',
+                                'whole_day' => 'Whole Day',
+                            ])
+                            ->required()
+                            ->disabled(),
                         TextInput::make('booking.slot_interval_minutes')
                             ->label('Slot Interval (minutes)')
                             ->integer()
                             ->minValue(5)
                             ->maxValue(180)
-                            ->required(),
+                            ->required()
+                            ->disabled(),
                         TextInput::make('booking.expire_after_hours')
                             ->label('Expire After (hours)')
                             ->integer()
                             ->minValue(1)
                             ->maxValue(168)
-                            ->required(),
+                            ->required()
+                            ->disabled(),
                         TextInput::make('booking.grace_period_minutes')
                             ->label('Grace Period (minutes)')
                             ->integer()
                             ->minValue(1)
                             ->maxValue(240)
-                            ->required(),
+                            ->required()
+                            ->disabled(),
                         TextInput::make('booking.day_start')
                             ->label('Day Start')
                             ->type('time')
-                            ->required(),
+                            ->required()
+                            ->disabled(),
                         TextInput::make('booking.day_end')
                             ->label('Day End')
                             ->type('time')
-                            ->required(),
+                            ->required()
+                            ->disabled(),
                     ])
                     ->columns(2),
                 Section::make('Labels')
@@ -207,6 +231,7 @@ class BusinessSettingsPage extends Page
                     ])
                     ->columns(2),
                 Section::make('Default Branch')
+                    ->visible(fn (callable $get): bool => $get('business.entity_type') === 'company')
                     ->schema([
                         Select::make('branches.default_branch_id')
                             ->label('Default Branch')
@@ -222,7 +247,7 @@ class BusinessSettingsPage extends Page
                             })
                             ->searchable()
                             ->preload()
-                            ->required()
+                            ->required(fn (callable $get): bool => $get('business.entity_type') === 'company')
                             ->createOptionForm([
                                 TextInput::make('name')
                                     ->required()
@@ -254,25 +279,13 @@ class BusinessSettingsPage extends Page
         $tenant = Filament::getTenant();
         $company = $tenant instanceof Company ? $tenant : null;
 
-        $defaultBranchId = (int) data_get($state, 'branches.default_branch_id');
+        $usesBranches = $businessSettings->usesBranches($company);
+
+        $defaultBranchId = $usesBranches
+            ? (int) data_get($state, 'branches.default_branch_id')
+            : null;
 
         $payload = [
-            'business' => [
-                'name' => data_get($state, 'business.name'),
-                'type' => data_get($state, 'business.type'),
-                'timezone' => data_get($state, 'business.timezone'),
-                'currency' => strtoupper((string) data_get($state, 'business.currency')),
-            ],
-            'booking' => [
-                'has_listings' => (bool) data_get($state, 'booking.has_listings'),
-                'requires_bed' => (bool) data_get($state, 'booking.requires_bed'),
-                'requires_follow_up' => (bool) data_get($state, 'booking.requires_follow_up'),
-                'slot_interval_minutes' => (int) data_get($state, 'booking.slot_interval_minutes'),
-                'day_start' => data_get($state, 'booking.day_start'),
-                'day_end' => data_get($state, 'booking.day_end'),
-                'expire_after_hours' => (int) data_get($state, 'booking.expire_after_hours'),
-                'grace_period_minutes' => (int) data_get($state, 'booking.grace_period_minutes'),
-            ],
             'labels' => [
                 'staff' => data_get($state, 'labels.staff'),
                 'resource' => data_get($state, 'labels.resource'),
@@ -285,7 +298,11 @@ class BusinessSettingsPage extends Page
         ];
 
         $businessSettings->saveSettings($payload, $company);
-        $businessSettings->backfillBranchAssignments($defaultBranchId, $company);
+
+        if ($usesBranches && $defaultBranchId) {
+            $businessSettings->backfillBranchAssignments($defaultBranchId, $company);
+        }
+
         $businessSettings->applyRuntimeConfig($company);
 
         Notification::make()

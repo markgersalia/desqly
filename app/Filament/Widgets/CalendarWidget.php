@@ -73,9 +73,13 @@ class CalendarWidget extends FilamentCalendarWidget
             session('calendar_view')
         ) ?? CalendarViewType::TimeGridWeek;
 
-        $this->branchFilter = session('calendar_branch_filter')
-            ? (int) session('calendar_branch_filter')
-            : app(BusinessSettings::class)->getDefaultBranchId();
+        if ($this->usesBranches()) {
+            $this->branchFilter = session('calendar_branch_filter')
+                ? (int) session('calendar_branch_filter')
+                : app(BusinessSettings::class)->getDefaultBranchId();
+        } else {
+            $this->branchFilter = null;
+        }
     }
 
     protected $listeners = ['updateUserOverview' => '$refresh'];
@@ -104,9 +108,7 @@ class CalendarWidget extends FilamentCalendarWidget
       
     public function getHeaderActions(): array
     {
-        $branchOptions = Branch::query()->orderBy('name')->pluck('name', 'id')->toArray();
-
-        return [
+        $actions = [
             Action::make('calendar_view_select')
                 ->label('Calendar View')
                 ->fillForm([
@@ -139,7 +141,12 @@ class CalendarWidget extends FilamentCalendarWidget
                 })
                 ->modalHeading('Select Calendar View')
                 ->modalSubmitActionLabel('Close'),
-            Action::make('calendar_branch_select')
+        ];
+
+        if ($this->usesBranches()) {
+            $branchOptions = Branch::query()->orderBy('name')->pluck('name', 'id')->toArray();
+
+            $actions[] = Action::make('calendar_branch_select')
                 ->label('Branch')
                 ->fillForm([
                     'branch_id' => $this->branchFilter,
@@ -155,8 +162,10 @@ class CalendarWidget extends FilamentCalendarWidget
                     // Action is handled by the live afterStateUpdated
                 })
                 ->modalHeading('Select Branch')
-                ->modalSubmitActionLabel('Close'),
-        ];
+                ->modalSubmitActionLabel('Close');
+        }
+
+        return $actions;
     }
 
     protected function getCalendarConfig(): array
@@ -252,7 +261,7 @@ class CalendarWidget extends FilamentCalendarWidget
             ->label('Create Booking')
             ->mountUsing(function (array $arguments, Form $form) {
                 $form->fill([
-                    'branch_id'    => $arguments['branch_id'] ?? $this->branchFilter ?? app(BusinessSettings::class)->getDefaultBranchId(),
+                    'branch_id'    => $this->usesBranches() ? ($arguments['branch_id'] ?? $this->branchFilter ?? app(BusinessSettings::class)->getDefaultBranchId()) : null,
                     'customer_id'  => $arguments['customer_id'] ?? null,
                     'listing_id'   => $arguments['listing_id'] ?? null,
                     'therapist_id' => $arguments['therapist_id'] ?? null,
@@ -320,6 +329,12 @@ class CalendarWidget extends FilamentCalendarWidget
             // ])
             ->after(fn() => $this->refreshRecords());
     }
+
+    private function usesBranches(): bool
+    {
+        return app(BusinessSettings::class)->usesBranches();
+    }
+
     protected function getDateClickContextMenuActions(): array
     {
         return [
@@ -435,3 +450,8 @@ class CalendarWidget extends FilamentCalendarWidget
         $this->mountAction('createLeavesAction');
     }
 }
+
+
+
+
+

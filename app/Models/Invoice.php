@@ -68,9 +68,8 @@ class Invoice extends Model
 
 
     public static function generateInvoiceNumber(){
-          $latestInvoice = self::latest('id')->first();
-        $nextNumber = $latestInvoice ? $latestInvoice->id + 1 : 1;
+          $random = strtoupper(substr(uniqid(), -5) . str_pad(random_int(0, 999), 3, '0', STR_PAD_LEFT));
 
-        return 'INV-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
+    return 'INV-' . $random;
     }
 }

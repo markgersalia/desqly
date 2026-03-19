@@ -2,21 +2,20 @@
 
 namespace App\Filament\Clusters\Therapist\Resources\TherapistLeaves;
 
-use App\TherapistLeaveType;
 use App\Filament\Clusters\Therapist\Resources\TherapistLeaves\Pages\ManageTherapistLeaves;
 use App\Filament\Clusters\Therapist\TherapistCluster;
 use App\Models\Therapist;
 use App\Models\TherapistLeave;
+use App\Services\BusinessSettings;
+use App\TherapistLeaveType;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -31,21 +30,27 @@ class TherapistLeaveResource extends Resource
 
     protected static ?string $cluster = TherapistCluster::class;
 
+    public static function canAccess(): bool
+    {
+        return app(BusinessSettings::class)->requiresStaffAssignment();
+    }
 
-    public static function schema()
+    public static function shouldRegisterNavigation(): bool
+    {
+        return self::canAccess();
+    }
+
+    public static function schema(): array
     {
         return [
             Select::make('therapist_id')
-                ->label('Therapist') 
+                ->label('Therapist')
                 ->reactive()
-                ->options(fn() => Therapist::active()->pluck('name', 'id'))
-
-                ->disableOptionWhen(function ($value, callable $get,$record) {
-
-
+                ->options(fn () => Therapist::active()->pluck('name', 'id'))
+                ->disableOptionWhen(function ($value, callable $get, $record) {
                     $start = $get('start_date');
-                    $end   = $get('end_date');
-                    // ✅ allow currently selected therapist
+                    $end = $get('end_date');
+
                     if ($record && (int) $record->therapist_id === (int) $value) {
                         return false;
                     }
@@ -65,13 +70,8 @@ class TherapistLeaveResource extends Resource
                         })
                         ->exists();
                 })
-
-                // ✅ required ONLY when editing
-                ->required(fn($record) => !$record)
-
-                // ✅ ALWAYS dehydrate so DB gets the value
+                ->required(fn ($record) => ! $record)
                 ->dehydrated()
-
                 ->columnSpanFull(),
             DateTimePicker::make('start_date')
                 ->required()
@@ -81,8 +81,6 @@ class TherapistLeaveResource extends Resource
                 ->required()
                 ->reactive()
                 ->columnSpan(1),
-
-
             Select::make('status')
                 ->default('pending')
                 ->options(['pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected'])
@@ -93,8 +91,7 @@ class TherapistLeaveResource extends Resource
                 ->required(),
             Textarea::make('reason')
                 ->columnSpanFull()
-                ->rows(5) ,
-
+                ->rows(5),
         ];
     }
 
@@ -129,9 +126,7 @@ class TherapistLeaveResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-                //
-            ])
+            ->filters([])
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),

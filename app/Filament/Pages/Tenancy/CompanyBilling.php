@@ -48,11 +48,11 @@ class CompanyBilling extends EditTenantProfile
                     ->label('Subscription Status')
                     ->required()
                     ->options([
-                        'active' => 'Active',
                         'trialing' => 'Trialing',
+                        'active' => 'Active',
                         'past_due' => 'Past Due',
+                        'unpaid' => 'Unpaid',
                         'canceled' => 'Canceled',
-                        'inactive' => 'Inactive',
                     ]),
                 DateTimePicker::make('trial_ends_at')
                     ->label('Trial Ends At'),

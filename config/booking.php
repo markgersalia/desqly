@@ -1,7 +1,9 @@
 <?php
 
 return [
+    'mode' => 'time_slot',
     'has_listings' => true,
+    'requires_staff' => true,
     'requires_bed' => true,
     'requires_follow_up' => true,
     'slot_interval_minutes' => 60,

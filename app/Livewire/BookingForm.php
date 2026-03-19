@@ -12,6 +12,7 @@ use App\Models\Customer;
 use App\Models\User;
 use Carbon\Carbon;
 use App\Services\TimeslotService;
+use App\Services\BusinessSettings;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,9 @@ class BookingForm extends Component
 {
     public $currentStep = 1;
     public $totalSteps = 5;
+    public bool $usesBranches = false;
+    public bool $isWholeDayMode = false;
+    public string $wholeDayWindow = '';
 
     // Step 1: Service Selection
     public $selectedBranch = '';
@@ -65,8 +69,15 @@ class BookingForm extends Component
     protected function getValidationRules(): array
     {
         $rules = $this->rules;
-         
-        
+
+        if (! $this->usesBranches) {
+            unset($rules['selectedBranch']);
+        }
+
+        if ($this->isWholeDayMode) {
+            unset($rules['selectedTime']);
+        }
+
         return $rules;
     }
 
@@ -88,13 +99,20 @@ class BookingForm extends Component
 
     public function mount()
     {
-        if (\Illuminate\Support\Facades\Schema::hasTable('branches')) {
+        $this->usesBranches = app(BusinessSettings::class)->usesBranches();
+        $this->isWholeDayMode = config('booking.mode', 'time_slot') === 'whole_day';
+        $this->wholeDayWindow = Carbon::parse($this->bookingDayStart())->format('h:i A') . ' - ' . Carbon::parse($this->bookingDayEnd())->format('h:i A');
+
+        if ($this->usesBranches && \Illuminate\Support\Facades\Schema::hasTable('branches')) {
             $this->branches = Branch::active()
                 ->orderBy('name')
                 ->get(['id', 'name'])
                 ->toArray();
 
             $this->selectedBranch = Branch::active()->value('id') ?? '';
+        } else {
+            $this->branches = [];
+            $this->selectedBranch = '';
         }
 
         // Load categories
@@ -159,9 +177,16 @@ class BookingForm extends Component
     public function updatedSelectedDate()
     {
         $this->isDateAvailable($this->selectedDate);
+
+        if ($this->isWholeDayMode) {
+            $this->selectedTime = $this->wholeDayWindow;
+            $this->availableTimes = [];
+            return;
+        }
+
         // Clear previously selected time when date changes
         $this->selectedTime = '';
-        
+
         // Generate available time slots based on selected date and service
         $this->availableTimes = $this->generateAvailableTimeSlots();
  
@@ -169,25 +194,27 @@ class BookingForm extends Component
 
     private function generateAvailableTimeSlots()
     {
-        if (! $this->selectedDate || ! $this->selectedListing || ! $this->selectedBranch) {
+        if (! $this->selectedDate || ! $this->selectedListing || ($this->usesBranches && ! $this->selectedBranch)) {
             return [];
         }
 
-        // Get available timeslots from the existing booking system
-        $availableSlots = Booking::availableTimeslots($this->selectedDate, $this->selectedBranch);
-        
         // Check if listing is available for selected date
         $listing = Listing::find($this->selectedListing);
         if (!$listing || !$listing->isAvailable($this->selectedDate)) {
             return [];
         }
 
-        return $availableSlots;
+        if ($this->isWholeDayMode) {
+            return [];
+        }
+
+        // Get available timeslots from the existing booking system
+        return Booking::availableTimeslots($this->selectedDate, $this->selectedBranch ?: null);
     }
 
     public function isDateAvailable($date)
     {
-        if (! $this->selectedBranch) {
+        if ($this->usesBranches && ! $this->selectedBranch) {
             $this->dateAvailableMessage = 'Please select a branch first';
             return false;
         }
@@ -211,19 +238,19 @@ class BookingForm extends Component
 
         // Check if any available therapist exists for the date
         $therapists = Therapist::where('is_active', 1)
-            ->where('branch_id', $this->selectedBranch)
+            ->when($this->selectedBranch, fn ($query) => $query->where('branch_id', $this->selectedBranch))
             ->get();
-        
+
         foreach ($therapists as $therapist) {
             // Check if therapist is on leave for the entire day
             $isOnLeave = $therapist->isOnLeave($date . ' 00:00:00', $date . ' 23:59:59');
-            
+
             if (!$isOnLeave) {
                 // Therapist is available on this date
                 $this->dateAvailableMessage = '';
                 return true;
             }
-        }  
+        }
 
         // No therapist available for this date
         $this->dateAvailableMessage = 'No therapists are available on this date';
@@ -257,10 +284,15 @@ class BookingForm extends Component
     {
         if ($this->currentStep == 1) {
             // Step 1: Category only
-            $this->validate([
-                'selectedBranch' => 'required|exists:branches,id',
+            $step1Rules = [
                 'selectedCategory' => 'required|exists:categories,id',
-            ]);
+            ];
+
+            if ($this->usesBranches) {
+                $step1Rules['selectedBranch'] = 'required|exists:branches,id';
+            }
+
+            $this->validate($step1Rules);
         } elseif ($this->currentStep == 2) {
             // Step 2: Service only
             $this->validate([
@@ -270,8 +302,11 @@ class BookingForm extends Component
             // Step 3: Date & Time
             $step3Rules = [
                 'selectedDate' => 'required|date|after_or_equal:today',
-                'selectedTime' => 'required',
             ];
+
+            if (! $this->isWholeDayMode) {
+                $step3Rules['selectedTime'] = 'required';
+            }
              
             $this->validate($step3Rules);
             
@@ -281,8 +316,11 @@ class BookingForm extends Component
                     'selectedDate' => 'Selected date is not available for this service.',
                 ]);
             }
-            
-            if (!in_array($this->selectedTime, $this->availableTimes)) {
+
+            if ($this->isWholeDayMode) {
+                $this->selectedTime = $this->wholeDayWindow;
+                $this->availableTimes = [];
+            } elseif (!in_array($this->selectedTime, $this->availableTimes)) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
                     'selectedTime' => 'Selected time slot is no longer available.',
                 ]);
@@ -321,15 +359,20 @@ class BookingForm extends Component
             // Get listing details
             $listing = Listing::find($this->selectedListing);
             
-            // Parse time slot to get start and end times
-            [$startTime, $endTime] = explode(' - ', $this->selectedTime);
-
+            // Parse booking time range
+            if ($this->isWholeDayMode) {
+                $startTime = $this->bookingDayStart();
+                $endTime = $this->bookingDayEnd();
+                $this->selectedTime = $this->wholeDayWindow;
+            } else {
+                [$startTime, $endTime] = explode(' - ', $this->selectedTime);
+            }
 
             
             // Create booking in database
             $bookingData = [
                 'customer_id' => $customer->id,
-                'branch_id' => $this->selectedBranch,
+                'branch_id' => $this->usesBranches ? $this->selectedBranch : null,
                 'listing_id' => $this->selectedListing,
                 'title' => $listing->title,
                 'type' => $listing->type,
@@ -347,12 +390,15 @@ class BookingForm extends Component
 
 
             $recipients = User::getAdminUsers();
+            $scheduleDetails = $this->isWholeDayMode
+                ? "from {$startTime} to {$endTime}"
+                : "at {$startTime}";
 
             foreach ($recipients as $recipient) {
                 $recipient->notify(
                     Notification::make()
                         ->title('New External Appointment')
-                        ->body("Appointment {$this->booking->booking_number} has been created for {$customer->name}. Service: {$listing->title} ({$listing->type}) scheduled for " . Carbon::parse($this->selectedDate)->format('M d, Y') . " at {$startTime}. Total: P" . number_format($listing->price, 2) . '. Status: Pending payment.')
+                        ->body("Appointment {$this->booking->booking_number} has been created for {$customer->name}. Service: {$listing->title} ({$listing->type}) scheduled for " . Carbon::parse($this->selectedDate)->format('M d, Y') . " {$scheduleDetails}. Total: P" . number_format($listing->price, 2) . '. Status: Pending payment.')
                         ->success()
                         ->actions([
                             Action::make('view')
@@ -382,6 +428,16 @@ class BookingForm extends Component
         }
     }
 
+    private function bookingDayStart(): string
+    {
+        return (string) config('booking.day_start', '09:00');
+    }
+
+    private function bookingDayEnd(): string
+    {
+        return (string) config('booking.day_end', '17:00');
+    }
+
     public function resetForm()
     {
         $this->reset();
@@ -394,4 +450,13 @@ class BookingForm extends Component
         return view('livewire.home.booking-form');
     }
 }
+
+
+
+
+
+
+
+
+
 

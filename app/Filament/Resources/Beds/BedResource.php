@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Beds;
 use App\Filament\Resources\Beds\Pages\ManageBeds;
 use App\Models\Branch;
 use App\Models\Bed;
+use App\Services\BusinessSettings;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -57,13 +58,16 @@ class BedResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
+        $usesBranches = app(BusinessSettings::class)->usesBranches();
+
         return $schema
             ->components([
                 Toggle::make('is_available')->default(true),
                 Select::make('branch_id')
                     ->label('Branch')
+                    ->visible($usesBranches)
                     ->options(Branch::query()->orderBy('name')->pluck('name', 'id'))
-                    ->required()
+                    ->required($usesBranches)
                     ->searchable()
                     ->preload(),
                 TextInput::make('name')
@@ -75,11 +79,14 @@ class BedResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $usesBranches = app(BusinessSettings::class)->usesBranches();
+
         return $table
             ->recordTitleAttribute('bed')
             ->columns([
                 TextColumn::make('branch.name')
                     ->label('Branch')
+                    ->visible($usesBranches)
                     ->sortable(),
                 TextColumn::make('name')
                     ->searchable(),
@@ -97,7 +104,8 @@ class BedResource extends Resource
             ->filters([
                 SelectFilter::make('branch_id')
                     ->relationship('branch', 'name')
-                    ->label('Branch'),
+                    ->label('Branch')
+                    ->visible($usesBranches),
             ])
             ->recordActions([
                 EditAction::make(),

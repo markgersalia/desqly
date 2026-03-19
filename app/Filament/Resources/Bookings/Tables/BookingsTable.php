@@ -20,7 +20,9 @@ class BookingsTable
 {
     public static function configure(Table $table): Table
     {
-        $defaultBranchId = app(BusinessSettings::class)->getDefaultBranchId();
+        $businessSettings = app(BusinessSettings::class);
+        $usesBranches = $businessSettings->usesBranches();
+        $defaultBranchId = $usesBranches ? $businessSettings->getDefaultBranchId() : null;
 
         return $table
             ->columns(self::schema())
@@ -28,6 +30,7 @@ class BookingsTable
                 SelectFilter::make('branch_id')
                     ->relationship('branch', 'name')
                     ->label('Branch')
+                    ->visible($usesBranches)
                     ->default($defaultBranchId),
                 SelectFilter::make('payment_status')
                     ->options(PaymentStatus::class),
@@ -52,6 +55,7 @@ class BookingsTable
     {
         $serviceLabel = business_label('service', 'Service');
         $staffLabel = business_label('staff', 'Therapist');
+        $usesBranches = app(BusinessSettings::class)->usesBranches();
 
         return [
             TextColumn::make('status')
@@ -75,6 +79,7 @@ class BookingsTable
                 ->sortable(),
             TextColumn::make('branch.name')
                 ->label('Branch')
+                ->visible($usesBranches)
                 ->sortable(),
             ImageColumn::make('listing.images')->label(''),
             TextColumn::make('listing.title')

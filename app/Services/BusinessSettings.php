@@ -18,12 +18,15 @@ class BusinessSettings
             ],
             'business' => [
                 'name' => config('app.name'),
+                'entity_type' => 'company',
                 'type' => 'spa',
                 'timezone' => config('app.timezone', 'UTC'),
                 'currency' => 'PHP',
             ],
             'booking' => [
+                'mode' => config('booking.mode', 'time_slot'),
                 'has_listings' => config('booking.has_listings', true),
+                'requires_staff' => config('booking.requires_staff', true),
                 'requires_bed' => config('booking.requires_bed', false),
                 'requires_follow_up' => config('booking.requires_follow_up', true),
                 'slot_interval_minutes' => config('booking.slot_interval_minutes', 60),
@@ -118,7 +121,7 @@ class BusinessSettings
         $row = $query->first();
         $data = is_array($row?->data) ? $row->data : [];
 
-        return array_replace_recursive($defaults, $data);
+        return $this->normalizeSettings(array_replace_recursive($defaults, $data));
     }
 
     public function saveSettings(array $data, ?Company $company = null): Setting
@@ -128,7 +131,7 @@ class BusinessSettings
         }
 
         $resolvedCompany = $this->resolveCompany($company);
-        $merged = array_replace_recursive($this->getSettings($resolvedCompany), $data);
+        $merged = $this->normalizeSettings(array_replace_recursive($this->getSettings($resolvedCompany), $data));
         $query = Setting::query();
 
         if ($resolvedCompany && Schema::hasColumn('settings', 'company_id')) {
@@ -154,9 +157,30 @@ class BusinessSettings
 
     public function getDefaultBranchId(?Company $company = null): ?int
     {
+        if (! $this->usesBranches($company)) {
+            return null;
+        }
+
         $id = data_get($this->getSettings($company), 'branches.default_branch_id');
 
         return $id ? (int) $id : null;
+    }
+
+    public function isCompanyMode(?Company $company = null): bool
+    {
+        $entityType = (string) data_get($this->getSettings($company), 'business.entity_type', 'company');
+
+        return $entityType === 'company';
+    }
+
+    public function usesBranches(?Company $company = null): bool
+    {
+        return $this->isCompanyMode($company);
+    }
+
+    public function requiresStaffAssignment(?Company $company = null): bool
+    {
+        return $this->isCompanyMode($company);
     }
 
     public function getLabel(string $key, string $default): string
@@ -174,7 +198,10 @@ class BusinessSettings
             'app.name' => data_get($settings, 'business.name', config('app.name')),
             'app.currency' => data_get($settings, 'business.currency', 'PHP'),
             'app.timezone' => data_get($settings, 'business.timezone', config('app.timezone')),
+            'business.entity_type' => data_get($settings, 'business.entity_type', 'company'),
+            'booking.mode' => data_get($settings, 'booking.mode', 'time_slot'),
             'booking.has_listings' => (bool) data_get($settings, 'booking.has_listings', true),
+            'booking.requires_staff' => $this->requiresStaffAssignment($company),
             'booking.requires_bed' => (bool) data_get($settings, 'booking.requires_bed', false),
             'booking.requires_follow_up' => (bool) data_get($settings, 'booking.requires_follow_up', true),
             'booking.slot_interval_minutes' => (int) data_get($settings, 'booking.slot_interval_minutes', 60),
@@ -187,6 +214,10 @@ class BusinessSettings
 
     public function backfillBranchAssignments(int $defaultBranchId, ?Company $company = null): void
     {
+        if ($defaultBranchId <= 0) {
+            return;
+        }
+
         if (! Schema::hasTable('therapists') || ! Schema::hasTable('beds') || ! Schema::hasTable('bookings')) {
             return;
         }
@@ -224,6 +255,21 @@ class BusinessSettings
     private function settingsTableExists(): bool
     {
         return Schema::hasTable('settings');
+    }
+
+    private function normalizeSettings(array $settings): array
+    {
+        $entityType = (string) data_get($settings, 'business.entity_type', 'company');
+        $entityType = in_array($entityType, ['company', 'individual'], true) ? $entityType : 'company';
+        $isCompanyMode = $entityType === 'company';
+        $bookingMode = (string) data_get($settings, 'booking.mode', 'time_slot');
+        $bookingMode = in_array($bookingMode, ['time_slot', 'whole_day'], true) ? $bookingMode : 'time_slot';
+
+        data_set($settings, 'business.entity_type', $entityType);
+        data_set($settings, 'booking.requires_staff', $isCompanyMode);
+        data_set($settings, 'booking.mode', $bookingMode);
+
+        return $settings;
     }
 
     private function resolveCompany(?Company $company = null): ?Company

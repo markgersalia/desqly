@@ -2,13 +2,22 @@
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Foundation\Auth\User as AuthUser;
 
 class UserPolicy
 {
     use HandlesAuthorization;
-    
+
+    public function before(AuthUser $authUser, string $ability): ?bool
+    {
+        if (method_exists($authUser, 'hasRole') && $authUser->hasRole('SystemOwner')) {
+            return true;
+        }
+
+        return null;
+    }
+
     public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('ViewAny:User');
@@ -63,5 +72,4 @@ class UserPolicy
     {
         return $authUser->can('Reorder:User');
     }
-
 }

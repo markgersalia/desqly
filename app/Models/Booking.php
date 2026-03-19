@@ -251,6 +251,15 @@ class Booking extends Model implements Eventable
                 $booking->user_id = auth()->user()->id;
             }
 
+            if (config('booking.mode', 'time_slot') === 'whole_day' && ($booking->start_time || $booking->end_time)) {
+                $bookingDate = Carbon::parse($booking->start_time ?? $booking->end_time)->toDateString();
+                $dayStart = (string) config('booking.day_start', '09:00');
+                $dayEnd = (string) config('booking.day_end', '17:00');
+
+                $booking->start_time = Carbon::parse("{$bookingDate} {$dayStart}")->toDateTimeString();
+                $booking->end_time = Carbon::parse("{$bookingDate} {$dayEnd}")->toDateTimeString();
+            }
+
         });
     }
 
@@ -344,3 +353,4 @@ class Booking extends Model implements Eventable
 
 
 }
+

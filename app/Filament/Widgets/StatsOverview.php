@@ -3,91 +3,86 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Booking;
-use App\Models\BookingPayment;
 use App\Models\Customer;
+use Carbon\Carbon;
+use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 
 class StatsOverview extends StatsOverviewWidget
 {
-    function formatNumberShort($number)
-    {
-        if ($number >= 1000000) {
-            return number_format($number / 1000000, 1) . 'M';
-        } elseif ($number >= 1000) {
-            return number_format($number / 1000, 1) . 'K';
-        } else {
-            return number_format($number, 2);
-        }
-    }
+    use InteractsWithPageFilters;
+
+    protected static bool $isLazy = false;
 
     protected function getStats(): array
-    {  
-        $completedBooking = Booking::query()->completed()->count();  
+    {
+        $branchId = $this->getBranchId();
 
-        $bookingChart = $this->generateChartData(
-            Booking::query()
-                ->completed()
-                ->selectRaw('DATE(created_at) as date, COUNT(*) as total')
-                ->groupBy('date')
-                ->pluck('total', 'date')
-                ->toArray()
-        );
+        $bookingsQuery = $this->bookingsQuery($branchId);
+        $totalBookings = (clone $bookingsQuery)->count();
+        $completedBookings = (clone $bookingsQuery)->completed()->count();
+        $todayBookings = (clone $bookingsQuery)->whereDate('start_time', Carbon::today())->count();
+        $pendingPayments = (clone $bookingsQuery)->where('payment_status', 'pending')->count();
 
-        $customerChart = $this->generateChartData(
-            Customer::query()
-                ->whereHas('bookings', fn($q) => $q->confirmed())
-                ->selectRaw('DATE(created_at) as date, COUNT(*) as total')
-                ->groupBy('date')
-                ->pluck('total', 'date')
-                ->toArray()
-        );
+        $customersQuery = $this->customersQuery($branchId);
+        $customersCount = (clone $customersQuery)->count();
+        $customersWithActiveBooking = (clone $customersQuery)
+            ->whereHas('bookings', function (Builder $query) use ($branchId) {
+                $query
+                    ->confirmed()
+                    ->when($branchId, fn (Builder $branchQuery) => $branchQuery->where('branch_id', $branchId));
+            })
+            ->count();
 
         return [
-
-            Stat::make('Total Bookings', Booking::query()->count())
-                // ->chart($bookingChart)
-                ->description($completedBooking . ' completed')
+            Stat::make('Total Bookings', $totalBookings)
+                ->description($completedBookings . ' completed')
                 ->descriptionIcon('heroicon-o-calendar-days'),
-                // ->color('primary'),
 
-
-            Stat::make('Today’s Bookings', $this->todayBookings())
+            Stat::make('Today\'s Bookings', $todayBookings)
                 ->description('All bookings scheduled today'),
 
-            Stat::make('Pending Payments', $this->pendingPayments())
+            Stat::make('Pending Payments', $pendingPayments)
                 ->description('Awaiting payment'),
-                
 
-            Stat::make('Customers', Customer::query()->count())
-                // ->chart($customerChart)
-                ->description(Customer::whereHas('bookings', fn($q) => $q->confirmed())->count() . ' has active booking')
-                ->descriptionIcon('heroicon-o-users')
-                // ->color('primary'),
-                
+            Stat::make('Customers', $customersCount)
+                ->description($customersWithActiveBooking . ' has active booking')
+                ->descriptionIcon('heroicon-o-users'),
         ];
     }
 
-
-    protected function todayBookings(): int
+    /**
+     * @return Builder<\App\Models\Booking>
+     */
+    protected function bookingsQuery(?int $branchId = null): Builder
     {
-        return Booking::whereDate('start_time', Carbon::today())->count();
+        return Booking::query()
+            ->when($branchId, fn (Builder $query) => $query->where('branch_id', $branchId));
     }
 
-    protected function pendingPayments(): int
+    /**
+     * @return Builder<\App\Models\Customer>
+     */
+    protected function customersQuery(?int $branchId = null): Builder
     {
-        return Booking::where('payment_status', 'pending')->count();
+        return Customer::query()
+            ->when($branchId, function (Builder $query) use ($branchId) {
+                $query->whereHas('bookings', fn (Builder $bookingQuery) => $bookingQuery->where('branch_id', $branchId));
+            });
     }
 
-    private function generateChartData(array $rawData, int $days = 7): array
+    protected function getBranchId(): ?int
     {
-        $chartData = [];
-        for ($i = $days - 1; $i >= 0; $i--) {
-            $date = Carbon::now()->subDays($i)->toDateString();
-            $chartData[] = isset($rawData[$date]) ? (float) $rawData[$date] : 0;
+        $branchId = data_get($this->pageFilters, 'branch_id');
+
+        if (blank($branchId)) {
+            return null;
         }
-        return $chartData;
+
+        $branchId = (int) $branchId;
+
+        return $branchId > 0 ? $branchId : null;
     }
 }

@@ -54,8 +54,7 @@ class BookingActions
                 if (! $record->canComplete()) {
                     // Show notification and stop execution
                     $recipients = \App\Models\User::getAdminUsers();
-                    foreach ($recipients as $recipient) {
-                        dd($recipient);
+                    foreach ($recipients as $recipient) { 
                         Notification::make()
                             ->title('Cannot complete booking')
                             ->body('Either payment is not yet complete or conditions are not met.')
@@ -71,44 +70,44 @@ class BookingActions
 
                 $record->update(['status' => 'completed']);
 
-                if (config('booking.requires_follow_up')) {
+                // if (config('booking.requires_follow_up')) {
 
 
-                    CustomerPostAssesment::create($data);
-                    $recipients = \App\Models\User::getAdminUsers();
-                    foreach ($recipients as $recipient) {
-                        Notification::make()
-                            ->title('Booking successfully completed')
-                            ->success()
-                            ->send()
-                            ->sendToDatabase($recipient);
-                    }
-                    // do whatever (save assessment, update booking, etc.)
-                    // Send data to the next modal
-                    if ($data['require_followup']) {
+                //     CustomerPostAssesment::create($data);
+                //     $recipients = \App\Models\User::getAdminUsers();
+                //     foreach ($recipients as $recipient) {
+                //         Notification::make()
+                //             ->title('Booking successfully completed')
+                //             ->success()
+                //             ->send()
+                //             ->sendToDatabase($recipient);
+                //     }
+                //     // do whatever (save assessment, update booking, etc.)
+                //     // Send data to the next modal
+                //     if ($data['require_followup']) {
 
-                        if ($ref == 'form') {
-                            BookingResource::getUrl(
-                                'create',
-                                [
-                                    'customer_id' => $record->customer_id,
-                                    'listing_id' => $record->listing_id,
-                                    'therapist_id' => $record->therapist_id,
-                                    'price' => $record->price,
-                                    'selected_date' => $data['next_session_date']
-                                ]
-                            );
-                        }
+                //         if ($ref == 'form') {
+                //             BookingResource::getUrl(
+                //                 'create',
+                //                 [
+                //                     'customer_id' => $record->customer_id,
+                //                     'listing_id' => $record->listing_id,
+                //                     'therapist_id' => $record->therapist_id,
+                //                     'price' => $record->price,
+                //                     'selected_date' => $data['next_session_date']
+                //                 ]
+                //             );
+                //         }
 
-                        $livewire->replaceMountedAction('createFollowupBookingAction', [
-                            'customer_id' => $record->customer_id,
-                            'listing_id' => $record->listing_id,
-                            'therapist_id' => $record->therapist_id,
-                            'price' => $record->price,
-                            'selected_date' => $data['next_session_date']
-                        ]);
-                    }
-                }
+                //         $livewire->replaceMountedAction('createFollowupBookingAction', [
+                //             'customer_id' => $record->customer_id,
+                //             'listing_id' => $record->listing_id,
+                //             'therapist_id' => $record->therapist_id,
+                //             'price' => $record->price,
+                //             'selected_date' => $data['next_session_date']
+                //         ]);
+                //     }
+                // }
             })
             ->icon(Heroicon::Check)
             // ->color('success')
@@ -167,7 +166,7 @@ class BookingActions
 
     public static function complete(): Action
     { 
-        return self::completeAndFollowUp();
+        return self::completeAndNoFollowUp();
     }
 
 

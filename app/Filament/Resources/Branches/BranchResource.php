@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Branches;
 
 use App\Filament\Resources\Branches\Pages\ManageBranches;
 use App\Models\Branch;
+use App\Services\BusinessSettings;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -29,6 +30,11 @@ class BranchResource extends Resource
     protected static ?int $navigationSort = 2;
 
     protected static UnitEnum|string|null $navigationGroup = 'Booking Management';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return app(BusinessSettings::class)->usesBranches();
+    }
 
     public static function form(Schema $schema): Schema
     {

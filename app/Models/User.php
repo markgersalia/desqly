@@ -2,28 +2,26 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Filament\Facades\Filament;
+use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasDefaultTenant;
 use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Collection;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Filament\Facades\Filament;
+use Illuminate\Support\Collection;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements HasDefaultTenant, HasTenants
+class User extends Authenticatable implements FilamentUser, HasDefaultTenant, HasTenants
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
     use HasRoles;
 
     /**
-     * The attributes that are mass assignable.
-     *
      * @var list<string>
      */
     protected $fillable = [
@@ -34,8 +32,6 @@ class User extends Authenticatable implements HasDefaultTenant, HasTenants
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
      * @var list<string>
      */
     protected $hidden = [
@@ -44,8 +40,6 @@ class User extends Authenticatable implements HasDefaultTenant, HasTenants
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -76,11 +70,28 @@ class User extends Authenticatable implements HasDefaultTenant, HasTenants
         return $this->company;
     }
 
-      /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        if ($panel->getId() === 'super-admin') {
+            return $this->hasRole('SystemOwner');
+        }
+
+        if ($panel->getId() === 'admin') {
+            if ($this->hasRole('SystemOwner')) {
+                return false;
+            }
+
+            // Allow users with no company to reach tenant registration.
+            if (blank($this->company_id)) {
+                return true;
+            }
+
+            return $this->hasAnyRole(['Admin', 'Staff']);
+        }
+
+        return false;
+    }
+
     public static function getAdminUsers()
     {
         try {
@@ -94,5 +105,4 @@ class User extends Authenticatable implements HasDefaultTenant, HasTenants
             return self::query()->whereRaw('1 = 0')->get();
         }
     }
-
 }

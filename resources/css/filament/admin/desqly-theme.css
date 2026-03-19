@@ -1,0 +1,279 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+
+/* ─── Base font override ─────────────────────────────────────────── */
+body,
+.fi-body {
+    font-family: 'DM Sans', sans-serif;
+}
+
+/* ─── Top bar ────────────────────────────────────────────────────── */
+.fi-topbar {
+    @apply border-b border-gray-200 bg-white shadow-none;
+}
+
+.fi-topbar .fi-logo {
+    @apply text-gray-900;
+}
+
+.fi-topbar .fi-icon {
+    @apply text-gray-600;
+}
+
+/* ─── Sidebar shell ──────────────────────────────────────────────── */
+.fi-sidebar { 
+    /* @apply bg-gray-900; */
+    background: #0f1623 ;
+    border-right: none !important;
+}
+
+/* Sidebar logo area */ 
+
+.fi-sidebar-header .fi-logo {
+    color: #ffffff !important;
+}
+
+/* ─── Tenant/company switcher ────────────────────────────────────── */
+.fi-tenant-menu-trigger {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    border-radius: 8px !important;
+    color: #ffffff !important;
+}
+
+.fi-tenant-menu-trigger:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.fi-tenant-menu-trigger .fi-icon,
+.fi-tenant-menu-trigger .fi-label {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* ─── Sidebar section labels ─────────────────────────────────────── */
+.fi-sidebar-group-label {
+    color: rgba(255, 255, 255, 0.3) !important;
+    font-size: 0.625rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+}
+
+/* ─── Nav items (default state) ──────────────────────────────────── */
+.fi-sidebar-item-button {
+    color: rgba(255, 255, 255, 0.55) !important;
+    border-radius: 0 !important;
+    transition: background 0.15s ease, color 0.15s ease !important;
+}
+
+.fi-sidebar-item-button:hover {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.fi-sidebar-item-button .fi-icon {
+    color: inherit !important;
+    opacity: 0.7;
+}
+
+.fi-sidebar-item-button:hover .fi-icon {
+    opacity: 1;
+}
+
+/* ─── Nav items (active state) ───────────────────────────────────── */
+.fi-sidebar-item-button.fi-active,
+.fi-sidebar-item-button[aria-current="page"] {
+    background-color: rgba(45, 212, 160, 0.13) !important;
+    color: #2dd4a0 !important;
+    font-weight: 500 !important;
+}
+
+.fi-sidebar-item-button.fi-active .fi-icon,
+.fi-sidebar-item-button[aria-current="page"] .fi-icon {
+    color: #2dd4a0 !important;
+    opacity: 1 !important;
+}
+
+/* ─── Nav badges (e.g. booking count) ───────────────────────────── */
+.fi-sidebar-item-badge {
+    background-color: rgba(45, 212, 160, 0.2) !important;
+    color: #2dd4a0 !important;
+    font-size: 0.65rem !important;
+    font-weight: 600 !important;
+    border-radius: 9999px !important;
+}
+
+.fi-sidebar-item-button.fi-active .fi-sidebar-item-badge {
+    background-color: rgba(45, 212, 160, 0.3) !important;
+}
+
+/* ─── Sidebar footer (user menu) ─────────────────────────────────── */
+.fi-sidebar-footer {
+    @apply bg-gray-900;
+    border-top: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+.fi-sidebar-footer .fi-user-menu-trigger {
+    color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.fi-sidebar-footer .fi-user-menu-trigger:hover {
+    color: rgba(255, 255, 255, 0.85) !important;
+    background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* ─── Main content area ──────────────────────────────────────────── */
+.fi-main {
+    /* background-color: #f5f4f0 !important; */
+}
+
+
+/* Main Content - Responsive to theme */
+.fi-page,
+.fi-page-content {
+    @apply w-full max-w-none;
+} 
+/* Remove max width and centering */
+.fi-main,
+.fi-main .fi-main-content {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+/* ─── Page header ────────────────────────────────────────────────── */
+.fi-header-heading {
+    font-size: 1.375rem !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.03em !important;
+    /* color: #1a1f2e !important; */
+}
+
+/* ─── Stat / overview widgets ────────────────────────────────────── */
+ 
+
+.fi-wi-stats-overview-stat-label {
+    font-size: 0.6875rem !important;
+    font-weight: 500 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important; 
+}
+
+.fi-wi-stats-overview-stat-value {
+    font-size: 1.75rem !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.05em !important; 
+    line-height: 1 !important;
+}
+
+.fi-wi-stats-overview-stat-description {
+    font-size: 0.7rem !important;
+    color: #9ca0b0 !important;
+}
+
+/* ─── Cards / panels ─────────────────────────────────────────────── */
+.fi-section,
+.fi-card {  
+    border-radius: 12px !important; 
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────── */
+
+/* Primary button → dark fill + teal text */
+.fi-btn-color-primary {
+    background-color: #0f1623 !important;
+    color: #2dd4a0 !important;
+    border-color: #0f1623 !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+}
+
+.fi-btn-color-primary:hover {
+    background-color: #1a2535 !important;
+    color: #2dd4a0 !important;
+}
+
+/* Secondary / gray button → outlined */
+.fi-btn-color-gray {
+    background-color: #ffffff !important;
+    color: #4a4f63 !important;
+    border: 1px solid #e5e3dd !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+}
+
+.fi-btn-color-gray:hover {
+    background-color: #f9f8f5 !important;
+}
+ 
+.fi-ta-row:hover td {
+    background-color: #fafff9 !important;
+}
+
+/* ─── Notifications ───────────────────────────────────────────────── */
+.fi-no-notification {
+    border-radius: 10px !important;
+    border: 1px solid #ede9e3 !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ─── Scrollbar (sidebar) ─────────────────────────────────────────── */
+.fi-sidebar ::-webkit-scrollbar {
+    width: 4px;
+}
+
+.fi-sidebar ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.fi-sidebar ::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+}
+
+.fi-sidebar ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+
+
+
+.fi-sidebar-item {
+    &.fi-active {
+        & > .fi-sidebar-item-btn {
+            & > .fi-sidebar-item-label { 
+                    color: var(--primary-400);
+                }
+            } 
+}}
+
+.fi-sidebar-item {
+    &.fi-active {
+        & > .fi-sidebar-item-btn {
+
+    background: rgba(45, 212, 160, .13);
+    color: #2dd4a0;
+
+        }
+    }
+}
+
+
+.fi-tenant-menu-trigger-tenant-name,
+.fi-tenant-menu-trigger-current-tenant-label{
+    color:white
+}
+
+.fi-tenant-menu-trigger {
+       background: rgba(45, 212, 160, .13);
+    color: #2dd4a0;
+
+}
+
+.fi-icon-btn .fi-size-md .fi-sidebar-close-collapse-sidebar-btn{
+    position: absolute;
+    margin-left: 200px;
+}
+
+.fi-sidebar-header {
+    flex-direction: row-reverse;
+    display: flex;
+    height: calc(var(--spacing)* 16);
+    align-items: center;
+    justify-content: center;
+}

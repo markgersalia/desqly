@@ -6,23 +6,6 @@
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
 
-/* @import '../../../../resources/css/filament/admin/spease-theme.css' */
+@import '../../../../resources/css/filament/admin/spease-theme.css'
 
-
-.fi-topbar { 
-    
-    /* @apply bg-linear-to-r from-primary-500 to-primary-700; */
-    /* background-color: var(--primary-700);  */
-}
-
-/* Sidebar - Always Dark Mode */
-.fi-sidebar {
-    @apply bg-white;  
-}
-.fi-topbar .fi-logo{
-    color: --primary-500;
-}
  
-.fi-topbar .fi-icon{
-    /* color: white; */
-}

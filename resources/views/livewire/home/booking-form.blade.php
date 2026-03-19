@@ -12,7 +12,7 @@
                             <span class="text-primary font-display font-semibold ml-1">
                                 @if ($currentStep == 1) Category
                                 @elseif ($currentStep == 2) Service
-                                @elseif ($currentStep == 3) Date & Time
+                                @elseif ($currentStep == 3) {{ $isWholeDayMode ? 'Date' : 'Date & Time' }}
                                 @elseif ($currentStep == 4) Details
                                 @else Confirm
                                 @endif
@@ -40,7 +40,7 @@
                                     {{ $currentStep >= $i ? 'text-primary font-medium' : 'text-gray-400' }}">
                                     @if ($i == 1) Category
                                     @elseif ($i == 2) Service
-                                    @elseif ($i == 3) Date & Time
+                                    @elseif ($i == 3) {{ $isWholeDayMode ? 'Date' : 'Date & Time' }}
                                     @elseif ($i == 4) Details
                                     @else Confirm
                                     @endif
@@ -72,7 +72,7 @@
                                     {{ $currentStep >= $i ? 'text-primary font-medium' : 'text-gray-400' }}">
                                     @if ($i == 1) Category
                                     @elseif ($i == 2) Service
-                                    @elseif ($i == 3) Date & Time
+                                    @elseif ($i == 3) {{ $isWholeDayMode ? 'Date' : 'Date & Time' }}
                                     @elseif ($i == 4) Your Details
                                     @else Confirm
                                     @endif
@@ -93,24 +93,26 @@
                 @if ($currentStep === 1)
                     <div class="space-y-8">
                         <div class="text-center mb-8">
-                            <h2 class="text-2xl md:text-3xl lg:text-4xl font-display font-light text-dark mb-3">Select Branch and Category</h2>
-                            <p class="text-gray-600">Choose your preferred branch before selecting a category</p>
+                            <h2 class="text-2xl md:text-3xl lg:text-4xl font-display font-light text-dark mb-3">{{ $usesBranches ? 'Select Branch and Category' : 'Select Category' }}</h2>
+                            <p class="text-gray-600">{{ $usesBranches ? 'Choose your preferred branch before selecting a category' : 'Choose a category to continue' }}</p>
                         </div>
 
-                        <div class="mb-8">
-                            <label class="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wider">
-                                Select Branch
-                            </label>
-                            <select wire:model.live="selectedBranch" class="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:border-primary focus:ring-primary">
-                                <option value="">Choose a branch</option>
-                                @foreach ($branches as $branch)
-                                    <option value="{{ $branch['id'] }}">{{ $branch['name'] }}</option>
-                                @endforeach
-                            </select>
-                            @error('selectedBranch')
-                                <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
-                            @enderror
-                        </div>
+                        @if ($usesBranches)
+                            <div class="mb-8">
+                                <label class="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wider">
+                                    Select Branch
+                                </label>
+                                <select wire:model.live="selectedBranch" class="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:border-primary focus:ring-primary">
+                                    <option value="">Choose a branch</option>
+                                    @foreach ($branches as $branch)
+                                        <option value="{{ $branch['id'] }}">{{ $branch['name'] }}</option>
+                                    @endforeach
+                                </select>
+                                @error('selectedBranch')
+                                    <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @endif
                          
                         <!-- Category Selection -->
                         <div class="mb-6">
@@ -234,8 +236,8 @@
                 @if ($currentStep === 3)
                     <div class="space-y-8">
                         <div class="text-center mb-8">
-                            <h2 class="text-2xl md:text-3xl lg:text-4xl font-display font-light text-dark mb-3">Choose Date & Time</h2>
-                            <p class="text-gray-600">Select your preferred appointment slot</p>
+                            <h2 class="text-2xl md:text-3xl lg:text-4xl font-display font-light text-dark mb-3">{{ $isWholeDayMode ? 'Choose Date' : 'Choose Date & Time' }}</h2>
+                            <p class="text-gray-600">{{ $isWholeDayMode ? 'Select your preferred appointment date' : 'Select your preferred appointment slot' }}</p>
                         </div>
                         
                         <!-- Date Picker -->
@@ -268,8 +270,14 @@
                             </div>
                         @endif
 
+                        @if ($isWholeDayMode && $selectedDate && !$dateAvailableMessage)
+                            <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-6">
+                                <p class="text-blue-700 font-medium">Whole-day booking window: {{ $wholeDayWindow }}</p>
+                            </div>
+                        @endif
+
                         <!-- Time Slots -->
-                        @if ($selectedDate && count($availableTimes) > 0)
+                        @if (! $isWholeDayMode && $selectedDate && count($availableTimes) > 0)
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-4 uppercase tracking-wider">
                                     Select Time
@@ -299,7 +307,7 @@
                             </div>
                         @endif
 
-                        @if ($selectedDate && count($availableTimes) === 0)
+                        @if (! $isWholeDayMode && $selectedDate && count($availableTimes) === 0)
                             <div class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4">
                                 <div class="flex items-center">
                                     <svg class="w-5 h-5 text-yellow-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -403,7 +411,7 @@
                             </div>
                             <div class="flex justify-between items-center pb-4 border-b border-gray-300">
                                 <span class="text-gray-600 uppercase tracking-wider text-sm">Time</span>
-                                <span class="font-display text-base md:text-lg text-dark">{{ $selectedTime }}</span>
+                                <span class="font-display text-base md:text-lg text-dark">{{ $isWholeDayMode ? $wholeDayWindow : $selectedTime }}</span>
                             </div>
                             <div class="flex justify-between items-center pb-4 border-b border-gray-300">
                                 <span class="text-gray-600 uppercase tracking-wider text-sm">Name</span>
@@ -506,7 +514,7 @@
                         </div>
                         <div class="flex justify-between">
                             <span class="font-medium">Time:</span>
-                            <span>{{ $selectedTime }}</span>
+                            <span>{{ $isWholeDayMode ? $wholeDayWindow : $selectedTime }}</span>
                         </div>
                     </div>
                 </div>
@@ -520,3 +528,5 @@
         @endif
     </div>
 </div>
+
+

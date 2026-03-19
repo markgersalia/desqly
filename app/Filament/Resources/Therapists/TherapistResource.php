@@ -3,28 +3,27 @@
 namespace App\Filament\Resources\Therapists;
 
 use App\Filament\Clusters\Therapist\TherapistCluster;
-use App\Filament\Resources\Listings\RelationManagers\BookingsRelationManager;
 use App\Filament\Resources\Therapists\Pages\CreateTherapist;
 use App\Filament\Resources\Therapists\Pages\EditTherapist;
 use App\Filament\Resources\Therapists\Pages\ListTherapists;
 use App\Filament\Resources\Therapists\Schemas\TherapistForm;
 use App\Filament\Resources\Therapists\Tables\TherapistsTable;
 use App\Models\Therapist;
+use App\Services\BusinessSettings;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
-use UnitEnum;
 
 class TherapistResource extends Resource
 {
     protected static ?string $model = Therapist::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::Users;
-    protected static ?string $cluster = TherapistCluster::class;
 
+    protected static ?string $cluster = TherapistCluster::class;
 
     protected static ?string $recordTitleAttribute = 'therapist';
 
@@ -36,6 +35,16 @@ class TherapistResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return Str::plural(self::getModelLabel());
+    }
+
+    public static function canAccess(): bool
+    {
+        return app(BusinessSettings::class)->requiresStaffAssignment();
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return self::canAccess();
     }
 
     public static function form(Schema $schema): Schema
@@ -50,9 +59,7 @@ class TherapistResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            // BookingsRelationManager::make()
-        ];
+        return [];
     }
 
     public static function getPages(): array

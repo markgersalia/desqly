@@ -33,6 +33,10 @@ class BookingPaymentResource extends Resource
         return $schema
             ->components(self::schema());
     }
+    public static function canAccess(): bool
+    {
+        return false;
+    }
 
     public static function schema($balance = 0)
     {

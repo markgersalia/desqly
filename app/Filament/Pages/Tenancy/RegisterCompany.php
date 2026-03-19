@@ -8,6 +8,7 @@ use Filament\Pages\Tenancy\RegisterTenant;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 class RegisterCompany extends RegisterTenant
 {
@@ -72,9 +73,20 @@ class RegisterCompany extends RegisterTenant
     {
         $company = Company::query()->create($data);
 
-        auth('web')->user()?->forceFill([
+        $user = auth('web')->user();
+
+        $user?->forceFill([
             'company_id' => $company->getKey(),
         ])->save();
+
+        if ($user) {
+            $adminRole = Role::query()->firstOrCreate([
+                'name' => 'Admin',
+                'guard_name' => 'web',
+            ]);
+
+            $user->assignRole($adminRole);
+        }
 
         return $company;
     }

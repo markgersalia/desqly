@@ -45,7 +45,7 @@ class OnboardingPage extends Page
 
         $this->timezones = timezone_identifiers_list();
 
-        $this->form->fill(array_replace_recursive([
+        $initial = array_replace_recursive([
             'business' => $defaults['business'],
             'booking' => $defaults['booking'],
             'labels' => $defaults['labels'],
@@ -53,7 +53,15 @@ class OnboardingPage extends Page
                 'name' => 'Main Branch',
                 'address' => '',
             ],
-        ], $settings));
+        ], $settings);
+
+        data_set(
+            $initial,
+            'booking.requires_staff',
+            $businessSettings->requiresStaffAssignment($company)
+        );
+
+        $this->form->fill($initial);
     }
 
     public static function canAccess(): bool
@@ -111,6 +119,18 @@ class OnboardingPage extends Page
                                     $set('labels.service', $preset['labels']['service']);
                                     $set('labels.booking', $preset['labels']['booking']);
                                 }),
+                            Select::make('business.entity_type')
+                                ->label('Business Entity')
+                                ->options([
+                                    'company' => 'Company',
+                                    'individual' => 'Individual',
+                                ])
+                                ->required()
+                                ->default('company')
+                                ->live()
+                                ->afterStateUpdated(function ($state, callable $set): void {
+                                    $set('booking.requires_staff', $state === 'company');
+                                }),
                             Select::make('business.timezone')
                                 ->label('Timezone')
                                 ->options(array_combine($this->timezones, $this->timezones))
@@ -135,6 +155,14 @@ class OnboardingPage extends Page
                                 ->required(),
                             Toggle::make('booking.requires_follow_up')
                                 ->label('Require follow-up workflow')
+                                ->required(),
+                            Select::make('booking.mode')
+                                ->label('Booking Mode')
+                                ->options([
+                                    'time_slot' => 'Time Slot',
+                                    'whole_day' => 'Whole Day',
+                                ])
+                                ->default('time_slot')
                                 ->required(),
                             TextInput::make('booking.slot_interval_minutes')
                                 ->label('Slot Interval (minutes)')
@@ -181,10 +209,11 @@ class OnboardingPage extends Page
                         ])
                         ->columns(2),
                     Step::make('Initial Branch')
+                        ->visible(fn (callable $get): bool => $get('business.entity_type') === 'company')
                         ->schema([
                             TextInput::make('initial_branch.name')
                                 ->label('Branch Name')
-                                ->required()
+                                ->required(fn (callable $get): bool => $get('business.entity_type') === 'company')
                                 ->maxLength(255),
                             TextInput::make('initial_branch.address')
                                 ->label('Address')
@@ -203,13 +232,20 @@ class OnboardingPage extends Page
 
         $tenant = Filament::getTenant();
         $company = $tenant instanceof Company ? $tenant : null;
+        $entityType = (string) data_get($state, 'business.entity_type', 'company');
+        $usesBranches = $entityType === 'company';
+        $requiresStaff = $entityType === 'company';
 
-        $branch = Branch::create([
-            'company_id' => $company?->getKey(),
-            'name' => data_get($state, 'initial_branch.name'),
-            'address' => data_get($state, 'initial_branch.address'),
-            'is_active' => true,
-        ]);
+        $branch = null;
+
+        if ($usesBranches) {
+            $branch = Branch::create([
+                'company_id' => $company?->getKey(),
+                'name' => data_get($state, 'initial_branch.name'),
+                'address' => data_get($state, 'initial_branch.address'),
+                'is_active' => true,
+            ]);
+        }
 
         $payload = [
             'onboarding' => [
@@ -217,12 +253,15 @@ class OnboardingPage extends Page
             ],
             'business' => [
                 'name' => data_get($state, 'business.name'),
+                'entity_type' => $entityType,
                 'type' => data_get($state, 'business.type'),
                 'timezone' => data_get($state, 'business.timezone'),
                 'currency' => strtoupper((string) data_get($state, 'business.currency')),
             ],
             'booking' => [
+                'mode' => (string) data_get($state, 'booking.mode', 'time_slot'),
                 'has_listings' => (bool) data_get($state, 'booking.has_listings'),
+                'requires_staff' => $requiresStaff,
                 'requires_bed' => (bool) data_get($state, 'booking.requires_bed'),
                 'requires_follow_up' => (bool) data_get($state, 'booking.requires_follow_up'),
                 'slot_interval_minutes' => (int) data_get($state, 'booking.slot_interval_minutes'),
@@ -238,12 +277,16 @@ class OnboardingPage extends Page
                 'booking' => data_get($state, 'labels.booking'),
             ],
             'branches' => [
-                'default_branch_id' => $branch->id,
+                'default_branch_id' => $branch?->id,
             ],
         ];
 
         $businessSettings->saveSettings($payload, $company);
-        $businessSettings->backfillBranchAssignments($branch->id, $company);
+
+        if ($usesBranches && $branch) {
+            $businessSettings->backfillBranchAssignments($branch->id, $company);
+        }
+
         $businessSettings->applyRuntimeConfig($company);
 
         Notification::make()

@@ -41,18 +41,20 @@ test('template selection updates booking and label defaults', function () {
         ->assertSet('data.labels.resource', 'Room');
 });
 
-test('onboarding submit persists settings and creates default branch', function () {
+test('onboarding submit persists settings and creates default branch in company mode', function () {
     $user = User::factory()->create();
 
     Livewire::actingAs($user)
         ->test(OnboardingPage::class)
         ->set('data.business.name', 'Test Wellness')
+        ->set('data.business.entity_type', 'company')
         ->set('data.business.type', 'gym')
         ->set('data.business.timezone', 'Asia/Manila')
         ->set('data.business.currency', 'php')
         ->set('data.booking.has_listings', true)
         ->set('data.booking.requires_bed', false)
         ->set('data.booking.requires_follow_up', false)
+        ->set('data.booking.mode', 'time_slot')
         ->set('data.booking.slot_interval_minutes', 60)
         ->set('data.booking.day_start', '09:00')
         ->set('data.booking.day_end', '18:00')
@@ -71,4 +73,41 @@ test('onboarding submit persists settings and creates default branch', function 
     expect($branch)->not->toBeNull();
     expect(app(BusinessSettings::class)->isOnboardingComplete())->toBeTrue();
     expect(app(BusinessSettings::class)->getDefaultBranchId())->toBe($branch->id);
+    expect(data_get(app(BusinessSettings::class)->getSettings(), 'booking.requires_staff'))->toBeTrue();
+    expect(data_get(app(BusinessSettings::class)->getSettings(), 'booking.mode'))->toBe('time_slot');
 });
+
+test('onboarding submit allows individual mode without creating a default branch', function () {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test(OnboardingPage::class)
+        ->set('data.business.name', 'Solo Practice')
+        ->set('data.business.entity_type', 'individual')
+        ->set('data.business.type', 'clinic')
+        ->set('data.business.timezone', 'Asia/Manila')
+        ->set('data.business.currency', 'php')
+        ->set('data.booking.has_listings', true)
+        ->set('data.booking.requires_bed', false)
+        ->set('data.booking.requires_follow_up', true)
+        ->set('data.booking.mode', 'whole_day')
+        ->set('data.booking.slot_interval_minutes', 60)
+        ->set('data.booking.day_start', '09:00')
+        ->set('data.booking.day_end', '18:00')
+        ->set('data.booking.expire_after_hours', 24)
+        ->set('data.booking.grace_period_minutes', 30)
+        ->set('data.labels.staff', 'Practitioner')
+        ->set('data.labels.resource', 'Room')
+        ->set('data.labels.service', 'Appointment')
+        ->set('data.labels.booking', 'Visit')
+        ->call('submit')
+        ->assertHasNoErrors();
+
+    expect(Branch::query()->where('name', 'Main Branch')->exists())->toBeFalse();
+    expect(app(BusinessSettings::class)->isOnboardingComplete())->toBeTrue();
+    expect(app(BusinessSettings::class)->usesBranches())->toBeFalse();
+    expect(app(BusinessSettings::class)->getDefaultBranchId())->toBeNull();
+    expect(data_get(app(BusinessSettings::class)->getSettings(), 'booking.requires_staff'))->toBeFalse();
+    expect(data_get(app(BusinessSettings::class)->getSettings(), 'booking.mode'))->toBe('whole_day');
+});
+
