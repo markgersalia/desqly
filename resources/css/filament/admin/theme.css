@@ -6,6 +6,8 @@
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
 
-@import '../../../../resources/css/filament/admin/spease-theme.css'
+/* @import '../../../../resources/css/filament/admin/spease-theme.css' */
 
- 
+ .ec-day.ec-today {
+    /* background-color: var(--primary-500,0.5); */
+}

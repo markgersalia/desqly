@@ -25,7 +25,8 @@ class BookingResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::CalendarDateRange;
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = -1;
+
 
     protected static UnitEnum|string|null $navigationGroup = 'Booking Management';
 

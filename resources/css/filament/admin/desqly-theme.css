@@ -129,13 +129,13 @@ body,
 /* Main Content - Responsive to theme */
 .fi-page,
 .fi-page-content {
-    @apply w-full max-w-none;
+    /* @apply w-full max-w-none; */
 } 
 /* Remove max width and centering */
 .fi-main,
 .fi-main .fi-main-content {
-    max-width: 100% !important;
-    width: 100% !important;
+    /* max-width: 100% !important; */
+    /* width: 100% !important; */
 }
 /* ─── Page header ────────────────────────────────────────────────── */
 .fi-header-heading {
@@ -263,17 +263,4 @@ body,
        background: rgba(45, 212, 160, .13);
     color: #2dd4a0;
 
-}
-
-.fi-icon-btn .fi-size-md .fi-sidebar-close-collapse-sidebar-btn{
-    position: absolute;
-    margin-left: 200px;
-}
-
-.fi-sidebar-header {
-    flex-direction: row-reverse;
-    display: flex;
-    height: calc(var(--spacing)* 16);
-    align-items: center;
-    justify-content: center;
 }

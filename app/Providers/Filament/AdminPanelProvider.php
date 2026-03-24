@@ -6,8 +6,12 @@ use App\Filament\Billing\ManualCompanyBillingProvider;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\Tenancy\EditCompanyProfile;
 use App\Filament\Pages\Tenancy\RegisterCompany;
+use App\Filament\Widgets\CalendarJsWidget;
 use App\Filament\Widgets\CalendarWidget;
+use App\Filament\Widgets\CompanySubscriptionStatusWidget;
+use App\Filament\Widgets\CustomerGrowthWidget;
 use App\Filament\Widgets\RevenueWidget;
+use App\Filament\Widgets\RevenueTrendChartWidget;
 use App\Filament\Widgets\StatsOverview;
 use App\Http\Middleware\ApplyTenantBusinessSettings;
 use App\Http\Middleware\EnsureOnboardingCompleted;
@@ -15,6 +19,7 @@ use App\Http\Middleware\EnsureTenantWriteAccess;
 use App\Models\Company;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Enums\DatabaseNotificationsPosition;
+use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -38,7 +43,9 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->colors([
-                'primary' => "#2dd4a0",
+                // 'primary' => "#2dd4a0",
+                'primary' => Color::Blue,
+
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
@@ -47,9 +54,13 @@ class AdminPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->widgets([
+                CompanySubscriptionStatusWidget::class,
                 StatsOverview::class,
                 RevenueWidget::class,
-                CalendarWidget::class,
+                // RevenueTrendChartWidget::class,
+                // CustomerGrowthWidget::class,
+                // CalendarJsWidget::class,
+                CalendarWidget::class
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -80,7 +91,9 @@ class AdminPanelProvider extends PanelProvider
             ->brandName(config('app.name'))
             ->profile()
             ->spa()
-            ->font('DM Mono')
+            
+            // ->font('Manrope')
+            // ->font('DM Mono')
             ->path('admin')
             ->tenant(Company::class, slugAttribute: 'slug')
             ->tenantRoutePrefix('company')
@@ -88,13 +101,25 @@ class AdminPanelProvider extends PanelProvider
             ->tenantProfile(EditCompanyProfile::class)
             ->tenantBillingProvider(new ManualCompanyBillingProvider())
             ->searchableTenantMenu(false)
+            ->requiresTenantSubscription()
+            ->tenantBillingRouteSlug('billing')
             ->login()
-            ->topbar(false)
+            ->topbar(true)
             ->authGuard('web')
-            ->globalSearch(false)
-            ->brandLogo(asset('images/logo.png'))
+            ->globalSearch(true)
+            // ->brandLogo(asset('images/logo.png'))
+            // ->brandLogo(function (): string {
+            //     $tenant = Filament::getTenant();
+
+            //     if ($tenant) {
+            //         return filament()->getTenantAvatarUrl($tenant);
+            //     }
+
+            //     return asset('images/logo.png');
+            // })
             ->brandLogoHeight('35px')
             ->databaseNotifications()
-            ->databaseNotifications(position: DatabaseNotificationsPosition::Sidebar);
-    }
+            // ->databaseNotifications(position: DatabaseNotificationsPosition::Sidebar);
+            ;
+            }
 }

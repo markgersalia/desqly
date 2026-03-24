@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\Branch;
 use App\Models\Listing;
 use App\Models\Category;
+use App\Models\DayOff;
 use App\Models\Therapist;
 use App\Models\Customer;
 use App\Models\User;
@@ -233,6 +234,15 @@ class BookingForm extends Component
         // Check listing availability first
         if (!$listing->isAvailable($date)) {
             $this->dateAvailableMessage = 'This service is not available on the selected date';
+            return false;
+        }
+        
+        $companyId = $this->selectedBranch
+            ? Branch::query()->whereKey($this->selectedBranch)->value('company_id')
+            : null;
+
+        if (DayOff::isDateOff($date, $companyId)) {
+            $this->dateAvailableMessage = 'The business is closed on the selected date';
             return false;
         }
 

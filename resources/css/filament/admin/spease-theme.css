@@ -1,7 +1,7 @@
 
 /* Sidebar - Always Dark Mode */
 .fi-sidebar {
-    @apply bg-linear-to-b from-gray-800 to-gray-950 bg-linear-to-t text-white; 
+    @apply bg-linear-to-b bg-gray-900 text-white; 
     border-right-color: rgb(31 41 55) !important; /* gray-800 */
 }
 .fi-body {
@@ -76,8 +76,8 @@
 
 /* Sub-navigation sidebar - Responsive to theme (NOT dark mode) */
 .fi-page-sub-navigation-sidebar-ctn{
-    height: 100vh;
-    @apply border-r-1 border-gray-200 dark:border-none pr-5;
+    /* height: 100vh; */
+    /* @apply border-r-1 border-gray-200 dark:border-none pr-5; */
 }
 
 /* Kill the auto-centering */
@@ -148,4 +148,81 @@ color-mix(in oklab, var(--color-white) 5%, transparent);
        background: rgba(45, 212, 160, .13);
     color: #2dd4a0;
 
+}
+
+/* 
+
+.fi-sidebar-close-collapse-sidebar-btn{
+    position: absolute;
+    right:-18px;
+    top:20px;
+    font-size: 10px;
+    @apply bg-gray-900 border-gray-800 border-1 rounded-full;
+}
+
+
+.fi-sidebar-close-collapse-sidebar-btn .fi-icon,
+.fi-sidebar-open-collapse-sidebar-btn .fi-icon
+{ 
+        width: calc(var(--spacing)* 4);
+        height: calc(var(--spacing)* 4);
+} */
+/* 
+.fi-sidebar-open-collapse-sidebar-btn{
+    
+    position: absolute;
+    right:-20px;
+    top:20px;
+    @apply bg-gray-900 rounded-full;
+} */
+
+.fi-sidebar-header {
+    flex-direction: row-reverse;
+    display: flex;
+    height: calc(var(--spacing)* 16);
+    align-items: center;
+    justify-content: center;
+}
+
+.fi-wi-calendar-js .calendarjs-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.fi-wi-calendar-js .calendarjs-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.fi-wi-calendar-js .calendarjs-toolbar-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.fi-wi-calendar-js .calendarjs-toolbar-heading {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgb(31 41 55);
+}
+
+.fi-wi-calendar-js .calendarjs-host {
+    min-height: 42rem;
+    border: 1px solid rgb(229 231 235);
+    border-radius: 0.75rem;
+    background: rgb(255 255 255);
+    padding: 0.5rem;
+}
+
+.dark .fi-wi-calendar-js .calendarjs-toolbar-heading {
+    color: rgb(229 231 235);
+}
+
+.dark .fi-wi-calendar-js .calendarjs-host {
+    border-color: rgb(55 65 81);
+    background: rgb(17 24 39);
 }

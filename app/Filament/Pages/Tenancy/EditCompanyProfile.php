@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Tenancy;
 
 use App\Models\Company;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Tenancy\EditTenantProfile;
 use Filament\Schemas\Schema;
@@ -37,6 +38,15 @@ class EditCompanyProfile extends EditTenantProfile
                     ->maxLength(255)
                     ->unique(Company::class, 'slug', ignoreRecord: true)
                     ->dehydrateStateUsing(fn (?string $state): string => Str::slug((string) $state)),
+                FileUpload::make('avatar')
+                    ->label('Company Avatar')
+                    ->avatar()
+                    ->image()
+                    ->imageEditor()
+                    ->disk('public')
+                    ->directory('companies/avatars')
+                    ->visibility('public')
+                    ->maxSize(2048),
             ]);
     }
 }

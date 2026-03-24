@@ -9,6 +9,7 @@ use App\Filament\SuperAdmin\Resources\Companies\RelationManagers\UsersRelationMa
 use App\Models\Company;
 use BackedEnum;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -19,6 +20,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Enums\Operation;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -58,6 +60,15 @@ class CompanyResource extends Resource
                             ->maxLength(255)
                             ->dehydrateStateUsing(fn (?string $state): string => Str::slug((string) $state))
                             ->unique(Company::class, 'slug', ignoreRecord: true),
+                        FileUpload::make('avatar')
+                            ->label('Company Avatar')
+                            ->avatar()
+                            ->image()
+                            ->imageEditor()
+                            ->disk('public')
+                            ->directory('companies/avatars')
+                            ->visibility('public')
+                            ->maxSize(2048),
                         Select::make('plan_code')
                             ->required()
                             ->options([
@@ -184,7 +195,7 @@ class CompanyResource extends Resource
                             ->required(),
                     ])
                     ->columns(2),
-              
+
             ]);
     }
 
@@ -192,6 +203,10 @@ class CompanyResource extends Resource
     {
         return $table
             ->columns([
+                ImageColumn::make('avatar')
+                    ->label('Avatar') 
+                    ->circular()
+                    ->defaultImageUrl(asset('images/logo.png')),
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
@@ -253,3 +268,6 @@ class CompanyResource extends Resource
         ];
     }
 }
+
+
+

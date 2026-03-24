@@ -265,6 +265,14 @@ class Booking extends Model implements Eventable
 
     public static function availableTimeslots($date, $branchId = null)
     {
+        $companyId = $branchId
+            ? Branch::query()->whereKey($branchId)->value('company_id')
+            : null;
+
+        if (DayOff::isDateOff($date, $companyId)) {
+            return [];
+        }
+
         $slots = TimeslotService::generateForDay($date);
 
         $available = [];

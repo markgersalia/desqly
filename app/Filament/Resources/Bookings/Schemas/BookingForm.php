@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\Bed;
 use App\Models\Booking;
 use App\Models\Customer;
+use App\Models\DayOff;
 use App\Models\Listing;
 use App\Models\Therapist;
 use App\PaymentStatus;
@@ -265,7 +266,23 @@ class BookingForm
                             $set('therapist_id', null);
                         })
                         ->required()
-                        ->reactive(),
+                        ->reactive()
+                        ->rule(function (callable $get) use ($usesBranches) {
+                            return function (string $attribute, $value, \Closure $fail) use ($get, $usesBranches): void {
+                                if (! $value) {
+                                    return;
+                                }
+
+                                $branchId = $usesBranches ? $get('branch_id') : null;
+                                $companyId = $branchId
+                                    ? Branch::query()->whereKey($branchId)->value('company_id')
+                                    : null;
+
+                                if (DayOff::isDateOff((string) $value, $companyId)) {
+                                    $fail('Selected date falls on a configured day off.');
+                                }
+                            };
+                        }),
 
                     ToggleButtons::make('available_timeslots')
                         ->hidden(function (callable $get) use ($isWholeDayMode) {
@@ -403,8 +420,15 @@ class BookingForm
                             $start = $get('start_time');
                             $end = $get('end_time');
                             $branchId = $get('branch_id');
+                            $companyId = $branchId
+                                ? Branch::query()->whereKey($branchId)->value('company_id')
+                                : null;
 
                             if (!$date || !$start || !$end || ($usesBranches && !$branchId)) return false;
+                            
+                            if (DayOff::isDateOff((string) $date, $companyId)) {
+                                return true;
+                            }
 
                             $therapist = Therapist::active()
                                 ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))

@@ -2,18 +2,21 @@
 
 namespace App\Models;
 
+use Filament\Models\Contracts\HasAvatar;
 use Filament\Models\Contracts\HasCurrentTenantLabel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-class Company extends Model implements HasCurrentTenantLabel
+class Company extends Model implements HasAvatar, HasCurrentTenantLabel
 {
     use HasFactory;
 
     protected $fillable = [
         'name',
         'slug',
+        'avatar',
         'plan_code',
         'subscription_status',
         'trial_ends_at',
@@ -74,6 +77,11 @@ class Company extends Model implements HasCurrentTenantLabel
         return $this->hasMany(TherapistLeave::class);
     }
 
+    public function dayOffs()
+    {
+        return $this->hasMany(DayOff::class);
+    }
+
     public function beds()
     {
         return $this->hasMany(Bed::class);
@@ -111,7 +119,34 @@ class Company extends Model implements HasCurrentTenantLabel
 
     public function getCurrentTenantLabel(): string
     {
-        return 'Current company';
+        return 'Welcome';
+    }
+
+    public function getFilamentAvatarUrl(): ?string
+    {
+        $avatar = trim((string) $this->avatar);
+ 
+        if ($avatar === '') {
+            return null;
+        }
+
+        if (Str::startsWith($avatar, ['http://', 'https://'])) {
+            return $avatar;
+        }
+
+        $path = str_replace('\\', '/', ltrim($avatar, '/'));
+        $path = preg_replace('#^(public/|storage/)#', '', $path) ?? $path;
+        $path = ltrim($path, '/');
+
+        if (! Str::startsWith($path, 'companies/avatars/')) {
+            $path = 'companies/avatars/' . basename($path);
+        }
+
+        return Storage::disk('public')->url($path);
+    }
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->getFilamentAvatarUrl();
     }
 }
-

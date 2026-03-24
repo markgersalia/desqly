@@ -7,6 +7,7 @@ use App\Filament\Resources\BookingPayments\BookingPaymentResource;
 use App\Filament\Resources\Bookings\Schemas\BookingForm;
 use App\Models\Branch;
 use App\Models\Booking;
+use App\Models\DayOff;
 use App\Models\TherapistLeave;
 use App\Services\BusinessSettings;
 use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
@@ -14,20 +15,20 @@ use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Schemas\Schema;
 use Filament\Support\Colors\Color;
 use Filament\Widgets\Widget;
 use Guava\Calendar\Contracts\ContextualInfo;
+use Guava\Calendar\Enums\Context;
 use Guava\Calendar\Enums\CalendarViewType;
 use Guava\Calendar\Filament\Actions\CreateAction;
 use Guava\Calendar\Filament\CalendarWidget as FilamentCalendarWidget;
 use Guava\Calendar\ValueObjects\DateClickInfo;
+use Guava\Calendar\ValueObjects\DateSelectInfo;
 use Guava\Calendar\ValueObjects\FetchInfo;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
-use Guava\Calendar\Enums\Context;
-use Guava\Calendar\ValueObjects\DateSelectInfo;
-use Guava\Calendar\ValueObjects\EventClickInfo;
 use Guava\Calendar\ValueObjects\EventDropInfo;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Form;
@@ -224,25 +225,33 @@ class CalendarWidget extends FilamentCalendarWidget
     {
         return $this->createAction(\App\Models\TherapistLeave::class)
             ->label('Create Leave')
-            ->fillForm(function (?ContextualInfo $info) {
-                // You can now access contextual info from the calendar using the $info argument
+            ->mountUsing(function (Schema $form, ?ContextualInfo $info): void {
                 if ($info instanceof DateClickInfo) {
-                    return [
-                        'start_date' => $info?->date?->toDateTimeString(),
-                        'end_date'   => $info?->date->endOfDay()?->toDateTimeString(),
-                    ];
+                    $form->fill([
+                        'start_date' => $info->date->toDateTimeString(),
+                        'end_date' => $info->date->copy()->endOfDay()->toDateTimeString(),
+                    ]);
+
+                    return;
                 }
 
-                // Both comparison checks are equal, but instanceof is better for IDE help
-                if ($info->getContext() === Context::DateSelect) {
-                    // do something on date select
-                    $start = $info?->start;
-                    $end = $info?->end->subSecond();
-                    return [
+                if ($info instanceof DateSelectInfo || $info?->getContext() === Context::DateSelect) {
+                    $start = $info->start;
+                    $end = $info->end->copy()->subSecond();
+
+                    if ($end->lt($start)) {
+                        $end = $start->copy();
+                    }
+
+                    $form->fill([
                         'start_date' => $start->toDateTimeString(),
-                        'end_date'   => $end->toDateTimeString(),
-                    ];
+                        'end_date' => $end->toDateTimeString(),
+                    ]);
+
+                    return;
                 }
+
+                $form->fill();
             })
             ->extraModalFooterActions([
                 Action::make('saveAndCreateAnother')
@@ -255,6 +264,53 @@ class CalendarWidget extends FilamentCalendarWidget
             ->after(fn() => $this->refreshRecords());
     }
 
+    public function createDayOffAction(): CreateAction
+    {
+        return $this->createAction(\App\Models\DayOff::class)
+            ->label('Create Day Off')
+            ->mountUsing(function (Schema $form, ?ContextualInfo $info): void {
+                if ($info instanceof DateClickInfo) {
+                    $date = $info->date->toDateString();
+
+                    $form->fill([
+                        'start_date' => $date,
+                        'end_date' => $date,
+                        'status' => 'approved',
+                    ]);
+
+                    return;
+                }
+
+                if ($info instanceof DateSelectInfo || $info?->getContext() === Context::DateSelect) {
+                    $start = $info->start->copy()->startOfDay();
+                    $end = $info->end->copy()->subSecond()->endOfDay();
+
+                    if ($end->lt($start)) {
+                        $end = $start->copy()->endOfDay();
+                    }
+
+                    $form->fill([
+                        'start_date' => $start->toDateString(),
+                        'end_date' => $end->toDateString(),
+                        'status' => 'approved',
+                    ]);
+
+                    return;
+                }
+
+                $form->fill();
+            })
+            ->extraModalFooterActions([
+                Action::make('saveAndCreateAnother')
+                    ->label('Save & Add Another')
+                    ->color('gray')
+                    ->action(function (array $data) {
+                        // Custom logic here
+                    }),
+            ])
+            ->after(fn() => $this->refreshRecords());
+    }
+    
     public function createBookingAction(): CreateAction
     {
         return $this->createAction(\App\Models\Booking::class)
@@ -265,14 +321,15 @@ class CalendarWidget extends FilamentCalendarWidget
                     'customer_id'  => $arguments['customer_id'] ?? null,
                     'listing_id'   => $arguments['listing_id'] ?? null,
                     'therapist_id' => $arguments['therapist_id'] ?? null,
-                ]);
+                ]); 
             })
-            ->fillForm(function (?ContextualInfo $info) {
+           ->fillForm(function (?ContextualInfo $info) {
                 // You can now access contextual info from the calendar using the $info argument
                 if ($info instanceof DateClickInfo) {
                     return [
                         'start_time' => $info?->date?->toDateTimeString(),
                         'end_time'   => $info?->date?->toDateTimeString(),
+                        'selected_date' => $info?->date?->toDateString()
                     ];
                 }
             })
@@ -340,7 +397,16 @@ class CalendarWidget extends FilamentCalendarWidget
         return [
             $this->createBookingAction(),
             $this->createLeavesAction(),
+            $this->createDayOffAction(),
             // Any other action you want
+        ];
+    }
+    
+    protected function getDateSelectContextMenuActions(): array
+    {
+        return [
+            $this->createLeavesAction(),
+            $this->createDayOffAction(),
         ];
     }
 
@@ -371,12 +437,21 @@ class CalendarWidget extends FilamentCalendarWidget
     }
     protected function getEvents(FetchInfo $info): Collection
     {
+        $companyId = Filament::getTenant()?->getKey() ?? auth('web')->user()?->company_id;
+
         return Booking::whereBetween('start_time', [$info->start, $info->end])
+            ->when($companyId, fn ($q) => $q->where('company_id', $companyId))
             ->when($this->branchFilter, fn ($q) => $q->where('branch_id', $this->branchFilter))
             ->get()
             ->merge(
                 TherapistLeave::whereBetween('start_date', [$info->start, $info->end])
+                    ->when($companyId, fn ($q) => $q->where('company_id', $companyId))
                     ->when($this->branchFilter, fn ($q) => $q->whereHas('therapist', fn ($therapistQuery) => $therapistQuery->where('branch_id', $this->branchFilter)))
+                    ->get()
+            )
+            ->merge(
+                DayOff::overlapping($info->start, $info->end)
+                    ->when($companyId, fn ($q) => $q->where('company_id', $companyId))
                     ->get()
             );
     }
@@ -396,14 +471,18 @@ class CalendarWidget extends FilamentCalendarWidget
     {
         return $event instanceof Booking
             ? Booking::class
-            : TherapistLeave::class;
+            : ($event instanceof DayOff
+                ? DayOff::class
+                : TherapistLeave::class);
     }
 
     protected function getEditLabel($event): string
     {
         return $event instanceof Booking
             ? 'Edit Booking'
-            : 'Edit Leave';
+            : ($event instanceof DayOff
+                ? 'Edit Day Off'
+                : 'Edit Leave');
     }
 
     protected function getEditFooterActions($event): array
@@ -443,12 +522,6 @@ class CalendarWidget extends FilamentCalendarWidget
         ];
     }
 
-    protected function onDateSelect(DateSelectInfo $info): void
-    {
-        // Validate the data and handle the event
-        // For example, you might want to mount a create action
-        $this->mountAction('createLeavesAction');
-    }
 }
 
 
