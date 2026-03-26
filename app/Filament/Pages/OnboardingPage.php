@@ -150,6 +150,11 @@ class OnboardingPage extends Page
                             Toggle::make('booking.has_listings')
                                 ->label('Enable services/listings')
                                 ->required(),
+                            Toggle::make('booking.requires_staff')
+                                ->label('Require staff')
+                                ->helperText('Automatically ON for company and OFF for individual mode.')
+                                ->disabled()
+                                ->dehydrated(true),
                             Toggle::make('booking.requires_bed')
                                 ->label('Require resource selection')
                                 ->required(),
@@ -190,6 +195,10 @@ class OnboardingPage extends Page
                                 ->label('Day End')
                                 ->type('time')
                                 ->required(),
+                        ])
+                        ->columns(2),
+                    Step::make('Labels')
+                        ->schema([
                             TextInput::make('labels.staff')
                                 ->label('Staff Label')
                                 ->required()
@@ -208,7 +217,7 @@ class OnboardingPage extends Page
                                 ->maxLength(50),
                         ])
                         ->columns(2),
-                    Step::make('Initial Branch')
+                    Step::make('Branch Setup')
                         ->visible(fn (callable $get): bool => $get('business.entity_type') === 'company')
                         ->schema([
                             TextInput::make('initial_branch.name')

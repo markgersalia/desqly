@@ -9,6 +9,17 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
+test('onboarding page renders aligned wizard steps', function () {
+    $user = User::factory()->create();
+
+    Livewire::actingAs($user)
+        ->test(OnboardingPage::class)
+        ->assertSee('Business Profile')
+        ->assertSee('Booking Rules')
+        ->assertSee('Labels')
+        ->assertSee('Branch Setup');
+});
+
 test('onboarding page validates required fields before submit', function () {
     $user = User::factory()->create();
 
@@ -110,4 +121,3 @@ test('onboarding submit allows individual mode without creating a default branch
     expect(data_get(app(BusinessSettings::class)->getSettings(), 'booking.requires_staff'))->toBeFalse();
     expect(data_get(app(BusinessSettings::class)->getSettings(), 'booking.mode'))->toBe('whole_day');
 });
-

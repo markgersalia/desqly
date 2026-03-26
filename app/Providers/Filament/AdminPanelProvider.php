@@ -57,7 +57,7 @@ class AdminPanelProvider extends PanelProvider
                 CompanySubscriptionStatusWidget::class,
                 StatsOverview::class,
                 RevenueWidget::class,
-                // RevenueTrendChartWidget::class,
+                RevenueTrendChartWidget::class,
                 // CustomerGrowthWidget::class,
                 // CalendarJsWidget::class,
                 CalendarWidget::class
@@ -92,32 +92,25 @@ class AdminPanelProvider extends PanelProvider
             ->profile()
             ->spa()
             
-            // ->font('Manrope')
+            ->font('Manrope')
             // ->font('DM Mono')
             ->path('admin')
             ->tenant(Company::class, slugAttribute: 'slug')
             ->tenantRoutePrefix('company')
             ->tenantRegistration(RegisterCompany::class)
-            ->tenantProfile(EditCompanyProfile::class)
+            // ->tenantProfile(EditCompanyProfile::class)
             ->tenantBillingProvider(new ManualCompanyBillingProvider())
             ->searchableTenantMenu(false)
             ->requiresTenantSubscription()
             ->tenantBillingRouteSlug('billing')
             ->login()
-            ->topbar(true)
+            ->topbar(false)
             ->authGuard('web')
-            ->globalSearch(true)
-            // ->brandLogo(asset('images/logo.png'))
-            // ->brandLogo(function (): string {
-            //     $tenant = Filament::getTenant();
-
-            //     if ($tenant) {
-            //         return filament()->getTenantAvatarUrl($tenant);
-            //     }
-
-            //     return asset('images/logo.png');
-            // })
-            ->brandLogoHeight('35px')
+            ->sidebarWidth('280px')
+            ->globalSearch(false)
+            ->brandLogo(fn () => view('filament.admin.logo'))
+            ->darkModeBrandLogo(fn () => view('filament.admin.logo'))
+            ->brandLogoHeight('3rem')
             ->databaseNotifications()
             // ->databaseNotifications(position: DatabaseNotificationsPosition::Sidebar);
             ;

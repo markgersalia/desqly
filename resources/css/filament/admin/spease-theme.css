@@ -1,14 +1,15 @@
 
 /* Sidebar - Always Dark Mode */
 .fi-sidebar {
-    @apply bg-linear-to-b bg-gray-900 text-white; 
+    /* @apply bg-linear-to-b bg-gray-900 text-white;  */
+    @apply bg-linear-to-b from-gray-800 to-gray-950 text-white; 
     border-right-color: rgb(31 41 55) !important; /* gray-800 */
 }
 .fi-body {
     &:not(.fi-body-has-top-navigation) {
         & .fi-sidebar {
             &.fi-sidebar-open {
-              width:16rem;
+              /* width:16rem; */
             }
         }
     }
@@ -70,8 +71,8 @@
 /* Remove max width and centering */
 .fi-main,
 .fi-main .fi-main-content {
-    max-width: 100% !important;
-    width: 100% !important;
+    /* max-width: 100% !important;
+    width: 100% !important; */
 }
 
 /* Sub-navigation sidebar - Responsive to theme (NOT dark mode) */
@@ -145,9 +146,7 @@ color-mix(in oklab, var(--color-white) 5%, transparent);
 }
 
 .fi-tenant-menu-trigger {
-       background: rgba(45, 212, 160, .13);
-    color: #2dd4a0;
-
+    background: color-mix(in srgb, var(--primary-500) 20%, transparent); 
 }
 
 /* 
@@ -177,7 +176,7 @@ color-mix(in oklab, var(--color-white) 5%, transparent);
 } */
 
 .fi-sidebar-header {
-    flex-direction: row-reverse;
+    /* flex-direction: row-reverse; */
     display: flex;
     height: calc(var(--spacing)* 16);
     align-items: center;
@@ -226,3 +225,15 @@ color-mix(in oklab, var(--color-white) 5%, transparent);
     border-color: rgb(55 65 81);
     background: rgb(17 24 39);
 }
+
+.fi-tenant-menu-trigger .fi-icon{
+    color: #fff;
+}
+
+  .fi-sidebar-database-notifications-btn-label {
+       @apply text-gray-200;
+    } 
+  .fi-sidebar-database-notifications-btn:hover {
+         @apply bg-gray-800 text-gray-200;
+    } 
+ 

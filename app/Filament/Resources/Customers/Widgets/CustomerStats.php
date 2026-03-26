@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Customers\Widgets;
 
 use App\Models\Customer;
 use Filament\Facades\Filament;
+use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,24 +16,23 @@ class CustomerStats extends StatsOverviewWidget
     {
         return [
             Stat::make('Total Customers', $this->baseQuery()->count())
-                ->description('All registered customers')
-                ->color('primary'),
+                ->description('All registered customers'),
+                // ->color('primary'),
 
             Stat::make('New This Month', $this->newCustomersThisMonth())
                 ->description('Joined this month')
+                ->descriptionIcon(Heroicon::PresentationChartLine)
                 ->color('success'),
 
             Stat::make('Customers with Bookings', $this->customersWithBookings())
                 ->description('With at least 1 booking')
-                ->color('info'),
-
-            Stat::make('Returning Customers', $this->returningCustomers())
-                ->description('2+ bookings')
-                ->color('warning'),
-
+                ->descriptionIcon(Heroicon::HandThumbUp)
+                ->color('primary'),
+ 
             Stat::make('Inactive Customers', $this->inactiveCustomers())
                 ->description('No bookings yet')
-                ->color('gray'),
+                ->descriptionIcon(Heroicon::ExclamationTriangle)
+                ->color('danger'),
         ];
     }
 

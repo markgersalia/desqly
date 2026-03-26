@@ -42,7 +42,7 @@ class RoleResource extends Resource
     protected static bool $isScopedToTenant = false;
     public static function getNavigationGroup(): ?string
     {
-        return 'Access Control';
+        return 'Settings';
     }
     public static function form(Schema $schema): Schema
     {

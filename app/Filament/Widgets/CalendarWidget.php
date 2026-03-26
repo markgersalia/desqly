@@ -31,8 +31,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
 use Guava\Calendar\ValueObjects\EventDropInfo;
 use Illuminate\Database\Eloquent\Model;
-use Livewire\Form;
 use Filament\Forms\Components\Select;
+use Illuminate\Support\Carbon;
 
 class CalendarWidget extends FilamentCalendarWidget
 {
@@ -225,7 +225,7 @@ class CalendarWidget extends FilamentCalendarWidget
     {
         return $this->createAction(\App\Models\TherapistLeave::class)
             ->label('Create Leave')
-            ->mountUsing(function (Schema $form, ?ContextualInfo $info): void {
+            ->mountUsing(function (Schema $form, array $arguments, ?ContextualInfo $info): void {
                 if ($info instanceof DateClickInfo) {
                     $form->fill([
                         'start_date' => $info->date->toDateTimeString(),
@@ -242,6 +242,26 @@ class CalendarWidget extends FilamentCalendarWidget
                     if ($end->lt($start)) {
                         $end = $start->copy();
                     }
+
+                    $form->fill([
+                        'start_date' => $start->toDateTimeString(),
+                        'end_date' => $end->toDateTimeString(),
+                    ]);
+
+                    return;
+                }
+
+                if ($clickedDate = $this->getDateClickFromArguments($arguments)) {
+                    $form->fill([
+                        'start_date' => $clickedDate->toDateTimeString(),
+                        'end_date' => $clickedDate->copy()->endOfDay()->toDateTimeString(),
+                    ]);
+
+                    return;
+                }
+
+                if ($selectedRange = $this->getDateSelectRangeFromArguments($arguments)) {
+                    [$start, $end] = $selectedRange;
 
                     $form->fill([
                         'start_date' => $start->toDateTimeString(),
@@ -268,7 +288,7 @@ class CalendarWidget extends FilamentCalendarWidget
     {
         return $this->createAction(\App\Models\DayOff::class)
             ->label('Create Day Off')
-            ->mountUsing(function (Schema $form, ?ContextualInfo $info): void {
+            ->mountUsing(function (Schema $form, array $arguments, ?ContextualInfo $info): void {
                 if ($info instanceof DateClickInfo) {
                     $date = $info->date->toDateString();
 
@@ -298,6 +318,32 @@ class CalendarWidget extends FilamentCalendarWidget
                     return;
                 }
 
+                if ($clickedDate = $this->getDateClickFromArguments($arguments)) {
+                    $date = $clickedDate->toDateString();
+
+                    $form->fill([
+                        'start_date' => $date,
+                        'end_date' => $date,
+                        'status' => 'approved',
+                    ]);
+
+                    return;
+                }
+
+                if ($selectedRange = $this->getDateSelectRangeFromArguments($arguments)) {
+                    [$start, $end] = $selectedRange;
+                    $start = $start->copy()->startOfDay();
+                    $end = $end->copy()->endOfDay();
+
+                    $form->fill([
+                        'start_date' => $start->toDateString(),
+                        'end_date' => $end->toDateString(),
+                        'status' => 'approved',
+                    ]);
+
+                    return;
+                }
+
                 $form->fill();
             })
             ->extraModalFooterActions([
@@ -315,23 +361,41 @@ class CalendarWidget extends FilamentCalendarWidget
     {
         return $this->createAction(\App\Models\Booking::class)
             ->label('Create Booking')
-            ->mountUsing(function (array $arguments, Form $form) {
-                $form->fill([
+            ->mountUsing(function (Schema $form, array $arguments, ?ContextualInfo $info): void {
+                $fill = [
                     'branch_id'    => $this->usesBranches() ? ($arguments['branch_id'] ?? $this->branchFilter ?? app(BusinessSettings::class)->getDefaultBranchId()) : null,
                     'customer_id'  => $arguments['customer_id'] ?? null,
                     'listing_id'   => $arguments['listing_id'] ?? null,
                     'therapist_id' => $arguments['therapist_id'] ?? null,
-                ]); 
-            })
-           ->fillForm(function (?ContextualInfo $info) {
-                // You can now access contextual info from the calendar using the $info argument
+                ];
+
                 if ($info instanceof DateClickInfo) {
-                    return [
-                        'start_time' => $info?->date?->toDateTimeString(),
-                        'end_time'   => $info?->date?->toDateTimeString(),
-                        'selected_date' => $info?->date?->toDateString()
-                    ];
+                    $fill['start_time'] = $info->date->toDateTimeString();
+                    $fill['end_time'] = $info->date->toDateTimeString();
+                    $fill['selected_date'] = $info->date->toDateString();
+                } elseif ($info instanceof DateSelectInfo || $info?->getContext() === Context::DateSelect) {
+                    $start = $info->start;
+                    $end = $info->end->copy()->subSecond();
+
+                    if ($end->lt($start)) {
+                        $end = $start->copy();
+                    }
+
+                    $fill['start_time'] = $start->toDateTimeString();
+                    $fill['end_time'] = $end->toDateTimeString();
+                    $fill['selected_date'] = $start->toDateString();
+                } elseif ($clickedDate = $this->getDateClickFromArguments($arguments)) {
+                    $fill['start_time'] = $clickedDate->toDateTimeString();
+                    $fill['end_time'] = $clickedDate->toDateTimeString();
+                    $fill['selected_date'] = $clickedDate->toDateString();
+                } elseif ($selectedRange = $this->getDateSelectRangeFromArguments($arguments)) {
+                    [$start, $end] = $selectedRange;
+                    $fill['start_time'] = $start->toDateTimeString();
+                    $fill['end_time'] = $end->toDateTimeString();
+                    $fill['selected_date'] = $start->toDateString();
                 }
+
+                $form->fill($fill);
             })
             ->extraModalFooterActions([
                 Action::make('saveAndCreateAnother')
@@ -408,6 +472,24 @@ class CalendarWidget extends FilamentCalendarWidget
             $this->createLeavesAction(),
             $this->createDayOffAction(),
         ];
+    }
+
+    public function getContextMenuActionsUsing(Context $context, array $data = []): Collection
+    {
+        $this->setRawCalendarContextData($context, $data);
+
+        $actions = match ($context) {
+            Context::EventClick => $this->getCachedEventClickContextMenuActions(),
+            Context::DateClick => $this->getCachedDateClickContextMenuActions(),
+            Context::DateSelect => $this->getCachedDateSelectContextMenuActions(),
+            Context::NoEventsClick => $this->getCachedNoEventsClickContextMenuActions(),
+        };
+
+        $rawContextData = $this->getRawCalendarContextData() ?? [];
+
+        return collect($actions)
+            ->filter(fn (Action $action): bool => $action->isVisible())
+            ->map(fn (Action $action): string => $action($rawContextData)->toHtml());
     }
 
     public function createFooAction(): CreateAction
@@ -522,8 +604,48 @@ class CalendarWidget extends FilamentCalendarWidget
         ];
     }
 
-}
+    private function getDateClickFromArguments(array $arguments): ?Carbon
+    {
+        if (data_get($arguments, 'context') !== Context::DateClick->value) {
+            return null;
+        }
 
+        $dateStr = data_get($arguments, 'data.dateStr');
+
+        if (! is_string($dateStr) || blank($dateStr)) {
+            return null;
+        }
+
+        return Carbon::parse($dateStr);
+    }
+
+    /**
+     * @return array{0: Carbon, 1: Carbon} | null
+     */
+    private function getDateSelectRangeFromArguments(array $arguments): ?array
+    {
+        if (data_get($arguments, 'context') !== Context::DateSelect->value) {
+            return null;
+        }
+
+        $startStr = data_get($arguments, 'data.startStr');
+        $endStr = data_get($arguments, 'data.endStr');
+
+        if (! is_string($startStr) || blank($startStr) || ! is_string($endStr) || blank($endStr)) {
+            return null;
+        }
+
+        $start = Carbon::parse($startStr);
+        $end = Carbon::parse($endStr)->subSecond();
+
+        if ($end->lt($start)) {
+            $end = $start->copy();
+        }
+
+        return [$start, $end];
+    }
+
+}
 
 
 

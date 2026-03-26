@@ -37,14 +37,18 @@ beforeEach(function () {
             'completed_at' => now()->toDateTimeString(),
         ],
         'business' => [
+            'name' => 'Tenant Company',
+            'type' => 'spa',
             'entity_type' => 'company',
             'timezone' => 'Asia/Manila',
             'currency' => 'PHP',
         ],
         'booking' => [
             'has_listings' => true,
+            'requires_staff' => true,
             'requires_bed' => true,
             'requires_follow_up' => true,
+            'mode' => 'time_slot',
             'slot_interval_minutes' => 30,
             'day_start' => '08:00',
             'day_end' => '18:00',
@@ -73,7 +77,20 @@ test('admin can access business settings while staff is forbidden', function () 
         ->assertForbidden();
 });
 
-test('business settings page only updates allowed operational fields', function () {
+test('business settings page renders aligned wizard steps', function () {
+    $admin = User::factory()->create(['company_id' => $this->company->id]);
+    $admin->assignRole('Admin');
+
+    $this->actingAs($admin)
+        ->get(route('filament.admin.pages.business-settings', filament_tenant_route_params($this->company)))
+        ->assertOk()
+        ->assertSee('Business Profile')
+        ->assertSee('Booking Rules')
+        ->assertSee('Labels')
+        ->assertSee('Branch Setup');
+});
+
+test('business settings page persists full wizard payload', function () {
     $user = User::factory()->create(['company_id' => $this->company->id]);
     $user->assignRole('Admin');
 
@@ -85,6 +102,20 @@ test('business settings page only updates allowed operational fields', function 
 
     Livewire::actingAs($user)
         ->test(BusinessSettingsPage::class)
+        ->set('data.business.name', 'Renamed Wellness')
+        ->set('data.business.type', 'clinic')
+        ->set('data.business.entity_type', 'company')
+        ->set('data.business.timezone', 'UTC')
+        ->set('data.business.currency', 'usd')
+        ->set('data.booking.has_listings', false)
+        ->set('data.booking.requires_bed', false)
+        ->set('data.booking.requires_follow_up', false)
+        ->set('data.booking.mode', 'whole_day')
+        ->set('data.booking.slot_interval_minutes', 45)
+        ->set('data.booking.day_start', '07:00')
+        ->set('data.booking.day_end', '19:00')
+        ->set('data.booking.expire_after_hours', 12)
+        ->set('data.booking.grace_period_minutes', 20)
         ->set('data.labels.staff', 'Practitioner')
         ->set('data.labels.resource', 'Room')
         ->set('data.labels.service', 'Appointment')
@@ -95,6 +126,23 @@ test('business settings page only updates allowed operational fields', function 
 
     $settings = app(BusinessSettings::class)->getSettings($this->company);
 
+    expect(data_get($settings, 'business.name'))->toBe('Renamed Wellness');
+    expect(data_get($settings, 'business.type'))->toBe('clinic');
+    expect(data_get($settings, 'business.entity_type'))->toBe('company');
+    expect(data_get($settings, 'business.timezone'))->toBe('UTC');
+    expect(data_get($settings, 'business.currency'))->toBe('USD');
+
+    expect(data_get($settings, 'booking.has_listings'))->toBeFalse();
+    expect(data_get($settings, 'booking.requires_staff'))->toBeTrue();
+    expect(data_get($settings, 'booking.requires_bed'))->toBeFalse();
+    expect(data_get($settings, 'booking.requires_follow_up'))->toBeFalse();
+    expect(data_get($settings, 'booking.mode'))->toBe('whole_day');
+    expect((int) data_get($settings, 'booking.slot_interval_minutes'))->toBe(45);
+    expect(data_get($settings, 'booking.day_start'))->toBe('07:00');
+    expect(data_get($settings, 'booking.day_end'))->toBe('19:00');
+    expect((int) data_get($settings, 'booking.expire_after_hours'))->toBe(12);
+    expect((int) data_get($settings, 'booking.grace_period_minutes'))->toBe(20);
+
     expect(data_get($settings, 'labels.staff'))->toBe('Practitioner');
     expect(data_get($settings, 'labels.resource'))->toBe('Room');
     expect(data_get($settings, 'labels.service'))->toBe('Appointment');
@@ -102,42 +150,47 @@ test('business settings page only updates allowed operational fields', function 
     expect((int) data_get($settings, 'branches.default_branch_id'))->toBe($branch->id);
 });
 
-test('tenant forged payload cannot override locked core settings', function () {
+test('business settings page persists core changes and normalizes mode-dependent values', function () {
     $user = User::factory()->create(['company_id' => $this->company->id]);
     $user->assignRole('Admin');
+
+    $branch = Branch::create([
+        'company_id' => $this->company->id,
+        'name' => 'Unused Branch',
+        'is_active' => true,
+    ]);
 
     Livewire::actingAs($user)
         ->test(BusinessSettingsPage::class)
         ->set('data.business.entity_type', 'individual')
-        ->set('data.business.timezone', 'UTC')
-        ->set('data.business.currency', 'USD')
-        ->set('data.booking.has_listings', false)
+        ->set('data.business.timezone', 'Asia/Tokyo')
+        ->set('data.business.currency', 'eur')
+        ->set('data.booking.has_listings', true)
+        ->set('data.booking.requires_staff', true)
         ->set('data.booking.requires_bed', false)
-        ->set('data.booking.requires_follow_up', false)
-        ->set('data.booking.slot_interval_minutes', 120)
-        ->set('data.booking.day_start', '11:00')
-        ->set('data.booking.day_end', '12:00')
-        ->set('data.booking.expire_after_hours', 1)
-        ->set('data.booking.grace_period_minutes', 1)
-        ->set('data.labels.staff', 'Updated Staff')
+        ->set('data.booking.requires_follow_up', true)
+        ->set('data.booking.mode', 'time_slot')
+        ->set('data.booking.slot_interval_minutes', 25)
+        ->set('data.booking.day_start', '10:00')
+        ->set('data.booking.day_end', '16:00')
+        ->set('data.booking.expire_after_hours', 8)
+        ->set('data.booking.grace_period_minutes', 5)
+        ->set('data.branches.default_branch_id', $branch->id)
         ->call('save')
         ->assertHasNoErrors();
 
     $settings = app(BusinessSettings::class)->getSettings($this->company);
 
-    expect(data_get($settings, 'business.entity_type'))->toBe('company');
-    expect(data_get($settings, 'business.timezone'))->toBe('Asia/Manila');
-    expect(data_get($settings, 'business.currency'))->toBe('PHP');
-    expect(data_get($settings, 'booking.has_listings'))->toBeTrue();
-    expect(data_get($settings, 'booking.requires_bed'))->toBeTrue();
-    expect(data_get($settings, 'booking.requires_follow_up'))->toBeTrue();
-    expect(data_get($settings, 'booking.mode'))->toBe('time_slot');
-    expect((int) data_get($settings, 'booking.slot_interval_minutes'))->toBe(30);
-    expect(data_get($settings, 'booking.day_start'))->toBe('08:00');
-    expect(data_get($settings, 'booking.day_end'))->toBe('18:00');
-    expect((int) data_get($settings, 'booking.expire_after_hours'))->toBe(24);
-    expect((int) data_get($settings, 'booking.grace_period_minutes'))->toBe(15);
-    expect(data_get($settings, 'labels.staff'))->toBe('Updated Staff');
+    expect(data_get($settings, 'business.entity_type'))->toBe('individual');
+    expect(data_get($settings, 'business.timezone'))->toBe('Asia/Tokyo');
+    expect(data_get($settings, 'business.currency'))->toBe('EUR');
+
+    expect(data_get($settings, 'booking.requires_staff'))->toBeFalse();
+    expect((int) data_get($settings, 'booking.slot_interval_minutes'))->toBe(25);
+    expect((int) data_get($settings, 'booking.expire_after_hours'))->toBe(8);
+    expect((int) data_get($settings, 'booking.grace_period_minutes'))->toBe(5);
+
+    expect(data_get($settings, 'branches.default_branch_id'))->toBeNull();
 });
 
 test('business settings save backfills null branch assignments', function () {
@@ -199,4 +252,3 @@ test('business settings save backfills null branch assignments', function () {
     expect($bed->fresh()->branch_id)->toBe($targetBranch->id);
     expect(Booking::query()->find($bookingId)?->branch_id)->toBe($targetBranch->id);
 });
-

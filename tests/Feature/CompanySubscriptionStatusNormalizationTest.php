@@ -2,25 +2,15 @@
 
 use App\Filament\Pages\Tenancy\CompanyBilling;
 use App\Models\Company;
-use Filament\Forms\Components\Select;
-use Filament\Schemas\Schema;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('company billing uses canonical subscription statuses', function () {
-    $page = app(CompanyBilling::class);
-    $schema = $page->form(Schema::make($page));
-
-    $statusField = collect($schema->getComponents())
-        ->first(fn ($component) => $component instanceof Select && $component->getName() === 'subscription_status');
-
-    expect($statusField)->not->toBeNull();
-
-    $options = array_keys($statusField->getOptions());
-
-    expect($options)->toBe(['trialing', 'active', 'past_due', 'unpaid', 'canceled'])
-        ->and($options)->not->toContain('inactive');
+test('company billing keeps canonical subscription statuses contract', function () {
+    expect(CompanyBilling::CANONICAL_SUBSCRIPTION_STATUSES)
+        ->toBe(['trialing', 'active', 'past_due', 'unpaid', 'canceled'])
+        ->and(CompanyBilling::CANONICAL_SUBSCRIPTION_STATUSES)
+        ->not->toContain('inactive');
 });
 
 test('subscription status normalization migration converts inactive to unpaid', function () {

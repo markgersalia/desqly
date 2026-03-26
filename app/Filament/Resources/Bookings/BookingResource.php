@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Bookings;
 
+use App\Filament\Clusters\Booking\BookingCluster;
 use App\Filament\Resources\Bookings\Pages\CreateBooking;
 use App\Filament\Resources\Bookings\Pages\EditBooking;
 use App\Filament\Resources\Bookings\Pages\ListBookings;
@@ -28,6 +29,7 @@ class BookingResource extends Resource
     protected static ?int $navigationSort = -1;
 
 
+    // protected static ?string $cluster = BookingCluster::class;
     protected static UnitEnum|string|null $navigationGroup = 'Booking Management';
 
     public static function getModelLabel(): string
