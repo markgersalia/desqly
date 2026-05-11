@@ -1,0 +1,18 @@
+<svg width="400" height="80" viewBox="0 0 400 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- White background -->
+  <rect width="400" height="80" fill="white"/>
+
+  <!-- Clock circle -->
+  <circle cx="40" cy="40" r="22" fill="#E6F1FB" stroke="#185FA5" stroke-width="2.5"/>
+  <!-- Clock hands -->
+  <line x1="40" y1="40" x2="40" y2="22" stroke="#185FA5" stroke-width="2" stroke-linecap="round"/>
+  <line x1="40" y1="40" x2="54" y2="47" stroke="#185FA5" stroke-width="2" stroke-linecap="round"/>
+  <!-- Green check badge -->
+  <circle cx="57" cy="20" r="10" fill="#1D9E75" stroke="white" stroke-width="2"/>
+  <path d="M51 20 L55 24 L63 14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Wordmark -->
+  <text x="76" y="36" font-family="'Trebuchet MS', Trebuchet, sans-serif" font-size="28" font-weight="700" fill="#042C53" letter-spacing="-1">appoint<tspan fill="#1D9E75">m8</tspan></text>
+  <!-- Tagline -->
+  <text x="76" y="55" font-family="'Trebuchet MS', Trebuchet, sans-serif" font-size="11" fill="#5F5E5A" letter-spacing="0.3">booking &amp; appointments made simple</text>
+</svg>

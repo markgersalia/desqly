@@ -151,7 +151,7 @@ class CompanyResource extends Resource
                         Toggle::make('booking.requires_staff')
                             ->label('Require staff')
                             ->helperText('Automatically ON for company and OFF for individual mode.')
-                            ->disabled()
+                            // ->disabled()
                             ->dehydrated(true),
                         Toggle::make('booking.requires_bed')
                             ->label('Require resource')
@@ -205,8 +205,8 @@ class CompanyResource extends Resource
             ->columns([
                 ImageColumn::make('avatar')
                     ->label('Avatar') 
-                    ->circular()
-                    ->defaultImageUrl(asset('images/logo.png')),
+                    ->circular(),
+                    // ->defaultImageUrl(asset('images/logo.png')),
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),

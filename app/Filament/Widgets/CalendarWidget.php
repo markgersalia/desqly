@@ -121,10 +121,10 @@ class CalendarWidget extends FilamentCalendarWidget
                         ->default(session('calendar_view'))
                         ->options([
                             'dayGridMonth' => 'Month Grid',
-                            'listDay' => 'Day List',
-                            'listWeek' => 'Week List',
-                            'listMonth' => 'Month List',
-                            'listYear' => 'Year List',
+                            // 'listDay' => 'Day List',
+                            // 'listWeek' => 'Week List',
+                            // 'listMonth' => 'Month List',
+                            // 'listYear' => 'Year List',
                             // 'resourceTimeGridDay' => 'Resource Day Grid',
                             // 'resourceTimeGridWeek' => 'Resource Week Grid',
                             // 'resourceTimelineDay' => 'Resource Day Timeline',

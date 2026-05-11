@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class RevenueTrendChartWidget extends ChartWidget
 {
-    use HasWidgetShield;
+    // use HasWidgetShield;
     use InteractsWithPageFilters;
 
     protected static bool $isLazy = false;

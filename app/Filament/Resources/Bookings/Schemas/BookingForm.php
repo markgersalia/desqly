@@ -284,6 +284,7 @@ class BookingForm
                             };
                         }),
 
+                    
                     ToggleButtons::make('available_timeslots')
                         ->hidden(function (callable $get) use ($isWholeDayMode) {
                             return $isWholeDayMode || $get('selected_date') == null;
@@ -292,6 +293,7 @@ class BookingForm
                             $date = $get('selected_date');
                             $branchId = $get('branch_id');
 
+                            // dd($usesBranches,$isWholeDayMode);
                             if (! $date) {
                                 return [];
                             }
@@ -356,7 +358,7 @@ class BookingForm
                                     return false;
                                 }
                             }
-
+ 
                             return true;
                         })
 

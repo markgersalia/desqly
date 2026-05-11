@@ -23,7 +23,7 @@ class BookingsTable
         $businessSettings = app(BusinessSettings::class);
         $usesBranches = $businessSettings->usesBranches();
         $defaultBranchId = $usesBranches ? $businessSettings->getDefaultBranchId() : null;
-
+    
         return $table
             ->columns(self::schema())
             ->filters([
@@ -56,7 +56,10 @@ class BookingsTable
         $serviceLabel = business_label('service', 'Service');
         $staffLabel = business_label('staff', 'Therapist');
         $usesBranches = app(BusinessSettings::class)->usesBranches();
+        $businessSettings = app(BusinessSettings::class);
 
+        $requiresStaff = $businessSettings->requiresStaffAssignment();
+        $hasListings = $businessSettings->usesBranches();
         return [
             TextColumn::make('status')
                 ->badge()
@@ -89,6 +92,7 @@ class BookingsTable
                 ->searchable()
                 ->sortable(),
             TextColumn::make('therapist.name')
+                ->visible($requiresStaff)
                 ->label($staffLabel),
             TextColumn::make('price')
                 ->money(config('app.currency', 'PHP'))

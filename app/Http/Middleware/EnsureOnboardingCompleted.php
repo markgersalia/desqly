@@ -36,19 +36,21 @@ class EnsureOnboardingCompleted
         }
 
         $isOnboardingRoute = $request->routeIs('filament.admin.pages.onboarding');
+
+         
         $isLogoutRoute = $request->routeIs('filament.admin.auth.logout');
         $isTenantSetupRoute = $request->routeIs('filament.admin.tenant.registration') || $request->routeIs('filament.admin.tenant.profile') || $request->routeIs('filament.admin.tenant.billing');
 
         $isComplete = $this->businessSettings->isOnboardingComplete($tenant);
 
         if (! $isComplete && ! $isOnboardingRoute && ! $isLogoutRoute && ! $isTenantSetupRoute) {
+          
             return $this->redirectWithOptionalTenant('filament.admin.pages.onboarding', $tenant);
         }
 
         if ($isComplete && $isOnboardingRoute) {
             return $this->redirectWithOptionalTenant('filament.admin.pages.dashboard', $tenant);
-        }
-
+        } 
         return $next($request);
     }
 

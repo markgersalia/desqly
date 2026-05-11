@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\DayOffs;
 
+use App\Filament\Clusters\Setting\SettingCluster;
 use App\Filament\Resources\DayOffs\Pages\ManageDayOffs;
 use App\Models\DayOff;
 use BackedEnum;
@@ -28,7 +29,8 @@ class DayOffResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
-    protected static UnitEnum|string|null $navigationGroup = 'Settings';
+    // protected static UnitEnum|string|null $navigationGroup = 'Settings';
+    protected static ?string $cluster = SettingCluster::class;
 
     public static function getModelLabel(): string
     {

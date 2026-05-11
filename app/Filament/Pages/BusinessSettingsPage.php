@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Clusters\Setting\SettingCluster;
 use App\Models\Branch;
 use App\Models\Company;
 use App\Services\BusinessSettings;
@@ -19,7 +20,8 @@ class BusinessSettingsPage extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = \Filament\Support\Icons\Heroicon::OutlinedCog6Tooth;
 
-    protected static ?string $navigationLabel = 'Business Settings';
+    // protected static ?string $navigationLabel = 'Business Settings';
+    protected static ?string $cluster = SettingCluster::class;
 
     protected static ?string $title = 'Business Settings';
 
@@ -27,7 +29,7 @@ class BusinessSettingsPage extends Page
 
     protected static ?int $navigationSort = 99;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Settings';
+    // protected static string|\UnitEnum|null $navigationGroup = 'Settings';
 
     protected string $view = 'filament.pages.business-settings-page';
 
@@ -166,7 +168,7 @@ class BusinessSettingsPage extends Page
                             Toggle::make('booking.requires_staff')
                                 ->label('Require staff')
                                 ->helperText('Automatically ON for company and OFF for individual mode.')
-                                ->disabled()
+                                // ->disabled()
                                 ->dehydrated(true),
                             Toggle::make('booking.requires_bed')
                                 ->label('Require resource')
@@ -214,14 +216,23 @@ class BusinessSettingsPage extends Page
                             TextInput::make('labels.staff')
                                 ->label('Staff Label')
                                 ->required()
+                                ->visible(function($record){
+                                    return  $record['booking.requires_staff '] ?? null;
+                                }) 
                                 ->maxLength(50),
                             TextInput::make('labels.resource')
                                 ->label('Resource Label')
+                                ->visible(function($record){
+                                    return  $record['booking.requires_bed'] ?? null;
+                                })
                                 ->required()
                                 ->maxLength(50),
                             TextInput::make('labels.service')
                                 ->label('Service Label')
                                 ->required()
+                                ->visible(function($record){
+                                    return  $record['booking.has_listings'] ?? null;
+                                }) 
                                 ->maxLength(50),
                             TextInput::make('labels.booking')
                                 ->label('Booking Label')

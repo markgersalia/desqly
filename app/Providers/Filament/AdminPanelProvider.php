@@ -28,6 +28,7 @@ use Filament\Pages\Enums\SubNavigationPosition;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Width;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -44,7 +45,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->colors([
                 // 'primary' => "#2dd4a0",
-                'primary' => Color::Blue,
+                'primary' => Color::Purple,
 
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
@@ -54,10 +55,10 @@ class AdminPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->widgets([
-                CompanySubscriptionStatusWidget::class,
+                // CompanySubscriptionStatusWidget::class,
                 StatsOverview::class,
                 RevenueWidget::class,
-                RevenueTrendChartWidget::class,
+                // RevenueTrendChartWidget::class,
                 // CustomerGrowthWidget::class,
                 // CalendarJsWidget::class,
                 CalendarWidget::class
@@ -70,7 +71,7 @@ class AdminPanelProvider extends PanelProvider
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,
                 SubstituteBindings::class,
-                EnsureOnboardingCompleted::class,
+                // EnsureOnboardingCompleted::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
@@ -88,30 +89,35 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->subNavigationPosition(SubNavigationPosition::End)
             ->unsavedChangesAlerts()
-            ->brandName(config('app.name'))
+            // ->brandName(config('app.name'))
             ->profile()
             ->spa()
             
             ->font('Manrope')
             // ->font('DM Mono')
             ->path('admin')
-            ->tenant(Company::class, slugAttribute: 'slug')
-            ->tenantRoutePrefix('company')
-            ->tenantRegistration(RegisterCompany::class)
-            // ->tenantProfile(EditCompanyProfile::class)
-            ->tenantBillingProvider(new ManualCompanyBillingProvider())
-            ->searchableTenantMenu(false)
-            ->requiresTenantSubscription()
-            ->tenantBillingRouteSlug('billing')
+            ->tenant(Company::class)
+            ->tenantRoutePrefix('dashboard')
+            // ->tenantRegistration(RegisterCompany::class)
+            ->tenantProfile(EditCompanyProfile::class)
+            // ->tenantBillingProvider(new ManualCompanyBillingProvider())
+            // ->searchableTenantMenu(false)
+            // ->requiresTenantSubscription()
+            // ->tenantBillingRouteSlug('billing')
             ->login()
             ->topbar(false)
             ->authGuard('web')
-            ->sidebarWidth('280px')
-            ->globalSearch(false)
+            // ->sidebarWidth('280px')
+            ->globalSearch(true)
             ->brandLogo(fn () => view('filament.admin.logo'))
-            ->darkModeBrandLogo(fn () => view('filament.admin.logo'))
+            // ->darkModeBrandLogo(fn () => view('filament.admin.logo'))
             ->brandLogoHeight('3rem')
             ->databaseNotifications()
+            
+            
+            ->databaseTransactions()
+            // ->maxContentWidth(Width::Full)
+            ->breadcrumbs(false) 
             // ->databaseNotifications(position: DatabaseNotificationsPosition::Sidebar);
             ;
             }

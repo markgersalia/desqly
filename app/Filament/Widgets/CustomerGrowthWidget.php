@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class CustomerGrowthWidget extends ChartWidget
 {
-    use HasWidgetShield;
+    // use HasWidgetShield;
     use InteractsWithPageFilters;
 
     protected static bool $isLazy = false;

@@ -20,14 +20,12 @@ class CustomerStats extends StatsOverviewWidget
                 // ->color('primary'),
 
             Stat::make('New This Month', $this->newCustomersThisMonth())
-                ->description('Joined this month')
-                ->descriptionIcon(Heroicon::PresentationChartLine)
-                ->color('success'),
+                ->description('Joined this month'),
+                // ->color('success'),
 
             Stat::make('Customers with Bookings', $this->customersWithBookings())
-                ->description('With at least 1 booking')
-                ->descriptionIcon(Heroicon::HandThumbUp)
-                ->color('primary'),
+                ->description('With at least 1 booking'),
+                // ->color('primary'),
  
             Stat::make('Inactive Customers', $this->inactiveCustomers())
                 ->description('No bookings yet')

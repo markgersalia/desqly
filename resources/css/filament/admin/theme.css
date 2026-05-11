@@ -6,12 +6,69 @@
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
 
-@import '../../../../resources/css/filament/admin/spease-theme.css';
+/* @import '../../../../resources/css/filament/admin/spease-theme.css'; */
 @import '../../../../resources/css/filament/admin/billing.css';
 
- .ec-day.ec-today {
-    /* background-color: var(--primary-500,0.5); */
+
+.fi-tenant-menu-trigger-tenant-name,
+.fi-tenant-menu-trigger-current-tenant-label{
+    color:white
 }
- 
 
  
+.fi-tenant-menu-trigger {
+    /* background: color-mix(in srgb, var(--primary-500) 20%, transparent);  */
+    @apply bg-primary-500;
+}
+
+.fi-sidebar{
+    @apply border-r-gray-200 dark:border-r-gray-800 border-r-1;
+    @apply bg-white dark:bg-gray-950;
+}
+
+.fi-sidebar-header{
+    @apply border-b-1 border-gray-200 dark:border-gray-800;
+}
+
+.fi-sidebar-header{
+    @apply border-b-1 border-gray-200 dark:border-gray-800;
+}
+
+
+/* Remove max width and centering */
+.fi-main,
+.fi-main .fi-main-content {
+    /* @apply bg-linear-to-t from-primary-50 to-primary-100; */
+    @apply bg-slate-50  dark:bg-gray-950;
+}
+
+
+
+/* 
+.fi-tenant-menu-trigger-tenant-name,
+.fi-tenant-menu-trigger-current-tenant-label{
+    color:white
+}
+
+ 
+.fi-tenant-menu-trigger {
+    background: color-mix(in srgb, var(--primary-500) 20%, transparent); 
+    @apply bg-primary-900;
+}
+
+body{
+    padding: 20px;
+}
+.fi-topbar{
+    @apply rounded-2xl mb-2 ;
+    position: static !important;
+    top: auto !important;
+}
+
+.fi-sidebar{
+ @apply rounded-2xl mx-2 ml-0 dark:bg-gray-900 bg-slate-900 border-1  dark:border-gray-800 border-gray-200;
+}
+ .ec-day.ec-today {
+    background-color: var(--primary-500,0.5);
+}
+  */

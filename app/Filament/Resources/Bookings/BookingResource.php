@@ -12,6 +12,7 @@ use App\Filament\Resources\Bookings\Tables\BookingsTable;
 use App\Filament\Resources\Bookings\Widgets\BookingStats;
 use App\Models\Booking;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -23,6 +24,7 @@ use UnitEnum;
 class BookingResource extends Resource
 {
     protected static ?string $model = Booking::class;
+    // protected static ?string $cluster = BookingCluster::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::CalendarDateRange;
 
@@ -31,7 +33,14 @@ class BookingResource extends Resource
 
     // protected static ?string $cluster = BookingCluster::class;
     protected static UnitEnum|string|null $navigationGroup = 'Booking Management';
-
+protected function getHeaderActions(): array
+{
+    return [
+        Action::make('edit'),
+        Action::make('delete')
+            ->requiresConfirmation(),
+    ];
+}
     public static function getModelLabel(): string
     {
         return business_label('booking', 'Booking');

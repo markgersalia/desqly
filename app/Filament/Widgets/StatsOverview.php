@@ -39,18 +39,18 @@ class StatsOverview extends StatsOverviewWidget
         return [
             Stat::make('Total Bookings', $totalBookings)
                 ->description($completedBookings . ' completed')
-                ->descriptionIcon('heroicon-o-check-circle')
-                ->color('success'),
+                ->descriptionIcon('heroicon-o-check-circle'),
+                // ->color('success'),
 
             Stat::make('Today\'s Bookings', $todayBookings)
                 ->description('All bookings scheduled today')
-                ->descriptionIcon('heroicon-o-calendar-days')
-                ->color('primary'),
+                ->descriptionIcon('heroicon-o-calendar-days'),
+                // ->color('primary'),
 
             Stat::make('Pending Payments', $pendingPayments)
                 ->description('Awaiting payment')
-                ->descriptionIcon('heroicon-o-exclamation-triangle')
-                ->color('warning'),
+                ->descriptionIcon('heroicon-o-exclamation-triangle'),
+                // ->color('warning'),
 
             Stat::make('Customers', $customersCount)
                 ->description($customersWithActiveBooking . ' has active booking')

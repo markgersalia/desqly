@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Customers;
 
+use App\Filament\Clusters\CustomerManagement\CustomerManagementCluster;
 use App\Filament\Resources\Customers\Pages\CreateCustomer;
 use App\Filament\Resources\Customers\Pages\EditCustomer;
 use App\Filament\Resources\Customers\Pages\ListCustomers;
@@ -17,12 +18,16 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class CustomerResource extends Resource
 {
     protected static ?string $model = Customer::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::UserGroup;
+    // protected static ?string $cluster = CustomerManagementCluster::class;
+
+        protected static UnitEnum|string|null $navigationGroup = 'Customer Management';
 
     public static function getNavigationBadge(): ?string
     {

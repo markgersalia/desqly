@@ -181,8 +181,7 @@ class BusinessSettings
     public function requiresStaffAssignment(?Company $company = null): bool
     {
         return $this->isCompanyMode($company);
-    }
-
+    } 
     public function getLabel(string $key, string $default): string
     {
         $value = data_get($this->getSettings(), "labels.{$key}", $default);

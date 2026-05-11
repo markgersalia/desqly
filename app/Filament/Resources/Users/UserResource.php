@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users;
 
+use App\Filament\Clusters\Setting\SettingCluster;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
@@ -20,8 +21,9 @@ class UserResource extends Resource
     protected static ?string $model = User::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::UserCircle;
-    protected static UnitEnum|string|null $navigationGroup = 'Settings';
+    // protected static UnitEnum|string|null $navigationGroup = 'Settings';
 
+    protected static ?string $cluster = SettingCluster::class;
     public static function form(Schema $schema): Schema
     {
         return UserForm::configure($schema);
