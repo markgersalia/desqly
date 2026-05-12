@@ -3,7 +3,10 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Billing\ManualCompanyBillingProvider;
+use App\Filament\Clusters\Dashboard\Pages\BookingDashboard as PagesBookingDashboard;
+use App\Filament\Pages\BookingDashboard;
 use App\Filament\Pages\Dashboard;
+use App\Filament\Pages\SalesDashboard;
 use App\Filament\Pages\Tenancy\EditCompanyProfile;
 use App\Filament\Pages\Tenancy\RegisterCompany;
 use App\Filament\Widgets\CalendarJsWidget;
@@ -18,6 +21,9 @@ use App\Http\Middleware\EnsureOnboardingCompleted;
 use App\Http\Middleware\EnsureTenantWriteAccess;
 use App\Models\Company;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use Caresome\FilamentAuthDesigner\AuthDesignerPlugin;
+use Caresome\FilamentAuthDesigner\Data\AuthPageConfig;
+use Caresome\FilamentAuthDesigner\Enums\MediaPosition;
 use Filament\Enums\DatabaseNotificationsPosition;
 use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
@@ -44,15 +50,17 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->colors([
-                // 'primary' => "#2dd4a0",
-                'primary' => Color::Purple,
-
+                'primary' => Color::hex('#2563FF'),
+                'success' => Color::hex('#14B8A6'),
+                'warning' => Color::hex('#F59E0B'),
+                'danger' => Color::hex('#EF4444'),
+                'gray' => Color::Slate,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->discoverClusters(in: app_path('Filament/Clusters'), for: 'App\\Filament\\Clusters')
             ->pages([
-                Dashboard::class,
+                PagesBookingDashboard::class,
             ])
             ->widgets([
                 // CompanySubscriptionStatusWidget::class,
@@ -82,6 +90,18 @@ class AdminPanelProvider extends PanelProvider
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->plugins([
                 FilamentShieldPlugin::make(),
+
+                AuthDesignerPlugin::make()
+                    ->defaults(
+                        fn($config) => $config
+                            ->media(asset('images/auth-bg.jpg'))
+                            ->mediaPosition(MediaPosition::Left)
+                            // ->blur(10)
+                    )
+                    ->login() 
+                    ->passwordReset()
+                    ->emailVerification()
+                    ->themeToggle()
             ])
             ->authMiddleware([
                 Authenticate::class,
@@ -92,9 +112,9 @@ class AdminPanelProvider extends PanelProvider
             // ->brandName(config('app.name'))
             ->profile()
             ->spa()
-            
-            ->font('Manrope')
-            // ->font('DM Mono')
+
+            // ->font('Manrope')
+            ->font('Plus Jakarta Sans')
             ->path('admin')
             ->tenant(Company::class)
             ->tenantRoutePrefix('dashboard')
@@ -104,21 +124,25 @@ class AdminPanelProvider extends PanelProvider
             // ->searchableTenantMenu(false)
             // ->requiresTenantSubscription()
             // ->tenantBillingRouteSlug('billing')
-            ->login()
+            // ->login()
             ->topbar(false)
             ->authGuard('web')
+            ->maxContentWidth('full')
             // ->sidebarWidth('280px')
             ->globalSearch(true)
-            ->brandLogo(fn () => view('filament.admin.logo'))
+            ->brandLogo(asset('images/logo.png'))
+            ->darkModeBrandLogo(asset('images/logo-dark.png'))
+            // ->brandLogo(fn () => view('filament.admin.logo'))
             // ->darkModeBrandLogo(fn () => view('filament.admin.logo'))
-            ->brandLogoHeight('3rem')
+            ->brandLogoHeight('3.5rem')
             ->databaseNotifications()
-            
-            
+
+
             ->databaseTransactions()
             // ->maxContentWidth(Width::Full)
-            ->breadcrumbs(false) 
+            ->breadcrumbs(true)
+        ->homeUrl(fn () => PagesBookingDashboard::getUrl(tenant: auth()->user()->currentTeam));
             // ->databaseNotifications(position: DatabaseNotificationsPosition::Sidebar);
-            ;
-            }
+        ;
+    }
 }
