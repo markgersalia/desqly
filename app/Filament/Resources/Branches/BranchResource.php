@@ -29,7 +29,7 @@ class BranchResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    protected static UnitEnum|string|null $navigationGroup = 'Booking Management';
+    protected static UnitEnum|string|null $navigationGroup = 'Settings';
 
     public static function shouldRegisterNavigation(): bool
     {

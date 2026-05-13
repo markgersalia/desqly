@@ -80,13 +80,13 @@ class RevenueWidget extends StatsOverviewWidget
                 ->chart($revenueChart)
                 ->description('All-time confirmed payments')
                 ->descriptionIcon('heroicon-o-currency-dollar')
-                ->color('primary'),
+                ->color('success'),
 
             Stat::make('Revenue This Month', $revenueThisMonthFormatted)
                 ->chart($revenueChartThisMonth)
                 ->description('Payments this month')
                 ->descriptionIcon('heroicon-o-currency-dollar')
-                ->color('primary'),
+                ->color('success'),
         ];
     }
 

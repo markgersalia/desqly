@@ -12,6 +12,6 @@ class SettingCluster extends Cluster
     protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Start;
     protected static ?string $title = 'Settings';
 
-    protected static ?int $navigationSort = 19;
+protected static ?int $navigationSort = 1000; // Lower numbers appear first
     protected static string|BackedEnum|null $navigationIcon = Heroicon::Cog8Tooth;
 }

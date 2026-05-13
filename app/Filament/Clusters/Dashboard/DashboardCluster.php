@@ -12,5 +12,6 @@ class DashboardCluster extends Cluster
     protected static string|BackedEnum|null $navigationIcon = Heroicon::Home;
 
         protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+protected static ?int $navigationSort = 1;
 
 }

@@ -94,7 +94,7 @@ class AdminPanelProvider extends PanelProvider
                 AuthDesignerPlugin::make()
                     ->defaults(
                         fn($config) => $config
-                            ->media(asset('images/auth-bg.jpg'))
+                            ->media(asset('images/auth-bg.png'))
                             ->mediaPosition(MediaPosition::Left)
                             // ->blur(10)
                     )
@@ -128,8 +128,8 @@ class AdminPanelProvider extends PanelProvider
             ->topbar(false)
             ->authGuard('web')
             ->maxContentWidth('full')
-            // ->sidebarWidth('280px')
-            ->globalSearch(true)
+            ->sidebarWidth('280px')
+            ->globalSearch(false)
             ->brandLogo(asset('images/logo.png'))
             ->darkModeBrandLogo(asset('images/logo-dark.png'))
             // ->brandLogo(fn () => view('filament.admin.logo'))

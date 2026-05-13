@@ -1,0 +1,104 @@
+/* === Event Calendar Tailwind Overrides === */
+
+/* Container */
+/* .ec {
+    @apply rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden;
+} */
+
+/* Toolbar */
+/* .ec-toolbar {
+    @apply flex items-center justify-between px-4 py-3
+           bg-white dark:bg-gray-900
+           border-b border-gray-200 dark:border-gray-800;
+} */
+
+/* .ec-title {
+    @apply text-base font-medium text-gray-900 dark:text-gray-100;
+} */
+
+/* Nav buttons */
+.ec-button {
+    @apply px-3 py-1.5 text-xs font-medium rounded-lg
+           bg-white dark:bg-gray-900
+           border border-gray-300 dark:border-gray-700
+           text-gray-600 dark:text-gray-400
+           hover:bg-gray-50 dark:hover:bg-gray-800
+           hover:text-gray-900 dark:hover:text-gray-100
+           transition-colors cursor-pointer;
+}
+
+/* Weekday headers */
+.ec-header .ec-day {
+    @apply py-2 text-center text-[10px] font-semibold uppercase tracking-widest
+           text-gray-400 dark:text-gray-600
+           bg-gray-50 dark:bg-gray-900
+           border-b border-gray-200 dark:border-gray-800;
+}
+
+.ec-day{
+    @apply dark:border-gray-800;
+}
+
+.ec-header{
+    @apply rounded-t-xl dark:border-gray-800;
+}
+
+.ec-header .ec-mon{
+    /* border-left: 1px solid #000 !important;
+    border-top:  1px solid #000 !important; */
+    @apply rounded-tl-xl;
+
+}
+
+.ec-header .ec-sun{
+    /* border-left: 1px solid #000 !important;
+    border-top:  1px solid #000 !important; */
+    @apply rounded-tr-xl;
+
+}
+/* Day cells */
+/* .ec-body .ec-day {
+    @apply min-h-[80px] p-1.5
+           bg-white dark:bg-gray-900
+           border-r border-b border-gray-200 dark:border-gray-800;
+} */
+
+.ec-day.ec-other-month {
+    
+    @apply bg-gray-50 dark:bg-gray-950 dark:border-gray-900;
+}
+
+/* Today highlight */
+.ec-day.ec-today {
+    @apply  dark:border-gray-900  text-white;
+}
+
+/* .ec-day.ec-today .ec-day-head time {
+    @apply inline-flex items-center justify-center
+           w-[22px] h-[22px] rounded-full
+           bg-green-400 text-green-900
+           text-xs font-bold;
+} */
+
+/* Day numbers */
+.ec-day-head time {
+    @apply text-xs text-gray-400;
+    @apply dark:border-gray-800;
+}
+.ec-days,.ec-body{
+    
+    @apply dark:border-gray-800;
+}
+/* Events */
+.ec-event {
+    
+    /* @apply text-[10px] px-1.5 py-0.5 mb-0.5 rounded
+           border-l-2 cursor-pointer
+           overflow-hidden whitespace-nowrap; */
+}
+
+/* Status colors — apply via backgroundColor in your PHP event data */
+/* completed = #4ade80 */
+/* confirmed = #60a5fa */
+/* pending   = #fbbf24 */
+/* cancelled = #f87171 */

@@ -19,7 +19,8 @@ class BookingStats extends StatsOverviewWidget
                 ->description('Confirmed & pending'),
 
             Stat::make('Pending Payments', $this->pendingPayments())
-                ->description('Awaiting payment'),
+                ->description('Awaiting payment')
+                ->color('danger'),
         ];
     }
 

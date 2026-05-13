@@ -8,6 +8,7 @@
 
 /* @import '../../../../resources/css/filament/admin/spease-theme.css'; */
 @import '../../../../resources/css/filament/admin/billing.css';
+@import '../../../../resources/css/filament/admin/calendar.css';
 
 
 .fi-tenant-menu-trigger-tenant-name,
@@ -18,7 +19,7 @@
  
 .fi-tenant-menu-trigger {
     /* background: color-mix(in srgb, var(--primary-500) 20%, transparent);  */
-    @apply bg-primary-500;
+    @apply bg-primary-500 dark:bg-primary-950;
 }
 
 .fi-sidebar{
@@ -169,3 +170,12 @@ body{
 .startup-calendar-legend__dot--dayoff {
     background: var(--startup-danger, #ef4444);
 } 
+
+.fi-simple-header {
+    align-items: center;
+    text-align: center;
+}
+
+.fi-logo { 
+    margin: 0 auto;
+}
